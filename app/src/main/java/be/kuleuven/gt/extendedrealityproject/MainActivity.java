@@ -1,27 +1,16 @@
 package be.kuleuven.gt.extendedrealityproject;
 
 import android.os.Bundle;
-
-import com.google.android.material.snackbar.Snackbar;
+import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.view.View;
-
-import androidx.navigation.NavController;
-import androidx.navigation.Navigation;
-import androidx.navigation.ui.AppBarConfiguration;
-import androidx.navigation.ui.NavigationUI;
-
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityMainBinding;
-
-import android.view.Menu;
-import android.view.MenuItem;
 
 public class MainActivity extends AppCompatActivity {
 
-    private AppBarConfiguration appBarConfiguration;
     private ActivityMainBinding binding;
+    private final NativeBridge nativeBridge = new NativeBridge();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -30,48 +19,28 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        setSupportActionBar(binding.toolbar);
+        nativeBridge.initializeRuntime();
 
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        appBarConfiguration = new AppBarConfiguration.Builder(navController.getGraph()).build();
-        NavigationUI.setupActionBarWithNavController(this, navController, appBarConfiguration);
+        TextView nativeStatus = binding.nativeStatus;
+        nativeStatus.setText(nativeBridge.getRuntimeStatus());
 
-        binding.fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAnchorView(R.id.fab)
-                        .setAction("Action", null).show();
-            }
+        binding.capturePoseButton.setOnClickListener(view -> {
+            float[] dummyPose = new float[16];
+            dummyPose[0] = 1.0f;
+            dummyPose[5] = 1.0f;
+            dummyPose[10] = 1.0f;
+            dummyPose[15] = 1.0f;
+            nativeBridge.submitCameraPose(dummyPose);
         });
-    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
+        binding.startTrainingButton.setOnClickListener(view -> {
+            nativeBridge.startTraining("demo-item-001");
+            nativeStatus.setText(nativeBridge.getRuntimeStatus());
+        });
 
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
-    }
-
-    @Override
-    public boolean onSupportNavigateUp() {
-        NavController navController = Navigation.findNavController(this, R.id.nav_host_fragment_content_main);
-        return NavigationUI.navigateUp(navController, appBarConfiguration)
-                || super.onSupportNavigateUp();
+        binding.stopTrainingButton.setOnClickListener(view -> {
+            nativeBridge.stopTraining();
+            nativeStatus.setText(nativeBridge.getRuntimeStatus());
+        });
     }
 }
