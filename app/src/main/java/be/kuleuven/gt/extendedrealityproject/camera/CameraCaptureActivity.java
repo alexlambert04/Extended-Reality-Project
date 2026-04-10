@@ -67,6 +67,8 @@ public class CameraCaptureActivity extends AppCompatActivity {
     private final Runnable hardStopRunnable = this::stopActiveRecording;
 
     private ActivityResultLauncher<String> requestCameraPermissionLauncher;
+    private int recommendationColorDefault;
+    private int recommendationColorWarning;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -74,7 +76,14 @@ public class CameraCaptureActivity extends AppCompatActivity {
         binding = ActivityCameraCaptureBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
+        recommendationColorDefault = ContextCompat.getColor(this, R.color.hint_positive);
+        recommendationColorWarning = ContextCompat.getColor(this, R.color.hint_warning);
+
         binding.timerText.setText(getString(R.string.camera_timer_initial));
+
+        if (getIntent().getBooleanExtra(RecordingFlowContract.EXTRA_HINT_SHORTER_RECORDING, false)) {
+            showShorterRecordingHint();
+        }
 
         requestCameraPermissionLauncher = registerForActivityResult(
                 new ActivityResultContracts.RequestPermission(),
@@ -145,8 +154,8 @@ public class CameraCaptureActivity extends AppCompatActivity {
         Recorder recorder = new Recorder.Builder()
                 .setQualitySelector(
                         QualitySelector.from(
-                                Quality.FHD,
-                                FallbackStrategy.lowerQualityThan(Quality.FHD)
+                                Quality.HD,
+                                FallbackStrategy.lowerQualityThan(Quality.HD)
                         )
                 )
                 .build();
@@ -167,6 +176,9 @@ public class CameraCaptureActivity extends AppCompatActivity {
             Toast.makeText(this, R.string.camera_setup_failed, Toast.LENGTH_SHORT).show();
             return;
         }
+
+        resetRecommendationHintStyle();
+        binding.recommendationHintText.setText(R.string.recording_recommendation_hint);
 
         File capturesDirectory = new File(getCacheDir(), "captures");
         if (!capturesDirectory.exists() && !capturesDirectory.mkdirs()) {
@@ -248,6 +260,29 @@ public class CameraCaptureActivity extends AppCompatActivity {
 
         String timerText = String.format(Locale.US, "%02d:%02d / 03:00", minutes, seconds);
         binding.timerText.setText(timerText);
+    }
+
+    private void showShorterRecordingHint() {
+        binding.recommendationHintText.setText(R.string.shorter_recording_hint);
+        binding.recommendationHintText.setTextColor(recommendationColorWarning);
+        binding.recommendationHintText.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                android.R.drawable.ic_dialog_alert,
+                0,
+                0,
+                0
+        );
+        binding.recommendationHintText.setCompoundDrawablePadding(dpToPx(6));
+        binding.recommendationHintText.setVisibility(View.VISIBLE);
+    }
+
+    private void resetRecommendationHintStyle() {
+        binding.recommendationHintText.setTextColor(recommendationColorDefault);
+        binding.recommendationHintText.setCompoundDrawablesRelativeWithIntrinsicBounds(0, 0, 0, 0);
+    }
+
+    private int dpToPx(int dp) {
+        float density = getResources().getDisplayMetrics().density;
+        return Math.round(dp * density);
     }
 }
 

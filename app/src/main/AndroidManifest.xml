@@ -3,8 +3,12 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.INTERNET" />
     <uses-feature
         android:name="android.hardware.camera.ar"
+        android:required="false" />
+    <uses-feature
+        android:name="android.hardware.camera"
         android:required="false" />
 
     <application
@@ -23,6 +27,10 @@
 
         <activity
             android:name=".camera.RegistrationActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ExtendedRealityProject" />
+        <activity
+            android:name=".camera.GenerationProgressActivity"
             android:exported="false"
             android:theme="@style/Theme.ExtendedRealityProject" />
         <activity
