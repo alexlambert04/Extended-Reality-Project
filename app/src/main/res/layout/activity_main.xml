@@ -22,10 +22,17 @@
         android:text="@string/native_status_placeholder" />
 
     <Button
-        android:id="@+id/capture_pose_button"
+        android:id="@+id/open_camera_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_marginTop="16dp"
+        android:text="@string/open_camera_flow" />
+
+    <Button
+        android:id="@+id/capture_pose_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
         android:text="@string/capture_pose" />
 
     <Button

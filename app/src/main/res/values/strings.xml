@@ -2,7 +2,25 @@
     <string name="app_name">ExtendedRealityProject</string>
     <string name="home_title">3DGS AR Marketplace (Edge Compute Baseline)</string>
     <string name="native_status_placeholder">Native runtime status: loading...</string>
+    <string name="open_camera_flow">Record Object</string>
     <string name="capture_pose">Capture Camera Pose</string>
     <string name="start_training">Start 3DGS Training</string>
     <string name="stop_training">Stop Training</string>
+    <string name="camera_screen_title">Scan Your Object</string>
+    <string name="camera_guidance">Move slowly around the object. For simple shapes, a ~30-second 360 video is often enough.</string>
+    <string name="camera_timer_initial">00:00 / 03:00</string>
+    <string name="start_recording">Start Recording</string>
+    <string name="stop_recording">Stop Recording</string>
+    <string name="recording_recommendation_hint">You reached 30 seconds. You can stop now for simple objects.</string>
+    <string name="camera_permission_needed">Camera permission is required to record scans.</string>
+    <string name="camera_setup_failed">Failed to start camera preview.</string>
+    <string name="recording_failed">Recording failed. Please try again.</string>
+    <string name="registration_title">Register Recording</string>
+    <string name="registration_subtitle">Give this scan a clear name before generation.</string>
+    <string name="recorded_video_path_label">Recorded file:</string>
+    <string name="recording_name_hint">Object title</string>
+    <string name="generate_model">Generate Model</string>
+    <string name="redo_recording">Redo Recording</string>
+    <string name="title_required">Please provide a title.</string>
+    <string name="generation_stub_message">Next: create MarketplaceItems row, upload video, and trigger start-kiri-job.</string>
 </resources>
