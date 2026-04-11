@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.Locale;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.ZipEntry;
@@ -98,6 +100,18 @@ public class SupabaseRepository {
         });
     }
 
+    public void fetchReadyMarketplaceItemsAsync(
+            @NonNull RepositoryCallback<List<MarketplaceItemRecord>> callback
+    ) {
+        executor.execute(() -> {
+            try {
+                postSuccess(callback, fetchReadyMarketplaceItems());
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
     public void retryStartKiriJobAsync(
             @NonNull String itemId,
             @NonNull RepositoryCallback<Void> callback
@@ -121,6 +135,21 @@ public class SupabaseRepository {
             try {
                 File plyFile = downloadAndExtractModel(itemId, modelUrl);
                 postSuccess(callback, plyFile);
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
+    public void downloadAndExtractPlyAsync(
+            @NonNull String itemId,
+            @NonNull String modelUrl,
+            @NonNull RepositoryCallback<File> callback
+    ) {
+        executor.execute(() -> {
+            try {
+                File modelFile = downloadAndExtractPly(itemId, modelUrl);
+                postSuccess(callback, modelFile);
             } catch (Exception exception) {
                 postError(callback, userMessage(exception), exception);
             }
@@ -200,6 +229,34 @@ public class SupabaseRepository {
 
         JSONObject object = executeForSingleObject(request);
         return parseMarketplaceItem(object);
+    }
+
+    @NonNull
+    private List<MarketplaceItemRecord> fetchReadyMarketplaceItems() throws IOException, JSONException {
+        Request request = baseApiRequest(baseUrl + "/rest/v1/MarketplaceItems?status=eq.READY&select=*&order=created_at.desc")
+                .get()
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException(errorFrom(response));
+            }
+
+            ResponseBody responseBody = response.body();
+            if (responseBody == null) {
+                throw new IOException("Server returned an empty response.");
+            }
+
+            JSONArray array = new JSONArray(responseBody.string());
+            List<MarketplaceItemRecord> result = new ArrayList<>();
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject object = array.optJSONObject(i);
+                if (object != null) {
+                    result.add(parseMarketplaceItem(object));
+                }
+            }
+            return result;
+        }
     }
 
     @NonNull
@@ -317,13 +374,46 @@ public class SupabaseRepository {
         }
 
         File zipFile = new File(outputDir, "model.zip");
-        downloadToFile(modelUrl, zipFile);
+        try {
+            downloadToFile(modelUrl, zipFile);
 
-        File modelFile = extractPreferredModel(zipFile, outputDir);
-        if (modelFile == null) {
-            throw new IOException("model.zip did not contain a supported model (.splat, .splatv, .ply).");
+            File modelFile = extractPreferredModel(zipFile, outputDir);
+            if (modelFile == null) {
+                throw new IOException("model.zip did not contain a supported model (.splat, .splatv, .ply).");
+            }
+            return modelFile;
+        } finally {
+            if (zipFile.exists()) {
+                zipFile.delete();
+            }
         }
-        return modelFile;
+    }
+
+    @NonNull
+    private File downloadAndExtractPly(@NonNull String itemId, @NonNull String modelUrl) throws IOException {
+        if (modelUrl.trim().isEmpty()) {
+            throw new IOException("Model URL is empty.");
+        }
+
+        File outputDir = new File(appContext.getCacheDir(), "models/" + itemId);
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            throw new IOException("Could not create model cache directory.");
+        }
+
+        File zipFile = new File(outputDir, "model.zip");
+        try {
+            downloadToFile(modelUrl, zipFile);
+
+            File modelFile = extractPly(zipFile, outputDir);
+            if (modelFile == null) {
+                throw new IOException("model.zip did not contain a .ply model.");
+            }
+            return modelFile;
+        } finally {
+            if (zipFile.exists()) {
+                zipFile.delete();
+            }
+        }
     }
 
     private void downloadToFile(@NonNull String url, @NonNull File outputFile) throws IOException {
@@ -413,6 +503,38 @@ public class SupabaseRepository {
             }
 
             return selectedFile;
+        }
+    }
+
+    @Nullable
+    private File extractPly(@NonNull File zipFile, @NonNull File outputDir) throws IOException {
+        try (ZipInputStream zipInputStream = new ZipInputStream(new java.io.FileInputStream(zipFile))) {
+            ZipEntry entry;
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String lowerName = entry.getName().toLowerCase(Locale.US);
+                if (!lowerName.endsWith(".ply")) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                File outputFile = new File(outputDir, "model.ply");
+                try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile, false)) {
+                    byte[] buffer = new byte[16 * 1024];
+                    int read;
+                    while ((read = zipInputStream.read(buffer)) != -1) {
+                        fileOutputStream.write(buffer, 0, read);
+                    }
+                    fileOutputStream.flush();
+                }
+                zipInputStream.closeEntry();
+                return outputFile;
+            }
+            return null;
         }
     }
 

@@ -6,29 +6,23 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityLocalModelsBinding;
@@ -37,11 +31,12 @@ import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
 public class LocalModelsActivity extends AppCompatActivity {
 
+    private static final long MIN_CACHE_FREE_BYTES = 250L * 1024L * 1024L;
+
     private ActivityLocalModelsBinding binding;
-    private final List<LocalModel> models = new ArrayList<>();
+    private final List<GalleryItem> items = new ArrayList<>();
     private final Set<String> expandedModelIds = new HashSet<>();
-    private final Set<String> pendingTitleRequests = new HashSet<>();
-    private final Map<String, String> titleCache = new HashMap<>();
+    private final Set<String> pendingDownloads = new HashSet<>();
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
     private LocalModelsAdapter adapter;
     @Nullable
@@ -53,14 +48,21 @@ public class LocalModelsActivity extends AppCompatActivity {
         binding = ActivityLocalModelsBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        binding.refreshModelsButton.setOnClickListener(view -> loadModels());
         adapter = new LocalModelsAdapter();
         binding.localModelsList.setAdapter(adapter);
+        binding.refreshModelsButton.setOnClickListener(view -> loadMarketplaceItems());
+
         if (SupabaseRepository.isConfigured()) {
             repository = new SupabaseRepository(this);
         }
 
-        loadModels();
+        loadMarketplaceItems();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        loadMarketplaceItems();
     }
 
     @Override
@@ -71,127 +73,149 @@ public class LocalModelsActivity extends AppCompatActivity {
         super.onDestroy();
     }
 
-    @Override
-    protected void onResume() {
-        super.onResume();
-        loadModels();
+    private void loadMarketplaceItems() {
+        if (repository == null) {
+            setEmptyState(true);
+            binding.emptyStateText.setText(R.string.missing_supabase_config);
+            return;
+        }
+
+        repository.fetchReadyMarketplaceItemsAsync(new SupabaseRepository.RepositoryCallback<List<MarketplaceItemRecord>>() {
+            @Override
+            public void onSuccess(@Nullable List<MarketplaceItemRecord> data) {
+                items.clear();
+                if (data != null) {
+                    for (MarketplaceItemRecord record : data) {
+                        String itemId = record.getId();
+                        File localPly = getLocalPlyFile(itemId);
+                        boolean cached = localPly.exists() && localPly.isFile() && localPly.length() > 0;
+                        String title = record.getTitle();
+                        if (title == null || title.trim().isEmpty()) {
+                            title = itemId;
+                        }
+                        items.add(new GalleryItem(
+                                itemId,
+                                title.trim(),
+                                record.getCreatedAt(),
+                                record.getModelUrl(),
+                                localPly,
+                                cached
+                        ));
+                    }
+                }
+
+                Set<String> availableIds = new HashSet<>();
+                for (GalleryItem item : items) {
+                    availableIds.add(item.itemId);
+                }
+                expandedModelIds.retainAll(availableIds);
+                pendingDownloads.retainAll(availableIds);
+
+                adapter.notifyDataSetChanged();
+                setEmptyState(items.isEmpty());
+            }
+
+            @Override
+            public void onError(@NonNull String message, @Nullable Throwable throwable) {
+                setEmptyState(true);
+                binding.emptyStateText.setText(getString(R.string.marketplace_load_failed, message));
+            }
+        });
     }
 
-    private void loadModels() {
-        models.clear();
-
-        File modelsRoot = new File(getCacheDir(), "models");
-        File[] itemFolders = modelsRoot.listFiles(File::isDirectory);
-        if (itemFolders != null) {
-            for (File folder : itemFolders) {
-                File modelFile = chooseModelFile(folder);
-                if (modelFile != null && modelFile.exists() && modelFile.isFile() && modelFile.length() > 0) {
-                    String itemId = folder.getName();
-                    String title = titleCache.get(itemId);
-                    if (title == null || title.trim().isEmpty()) {
-                        title = readTitleFromMetadata(folder, itemId);
-                    }
-                    titleCache.put(itemId, title);
-                    models.add(new LocalModel(itemId, title, modelFile));
-                }
-            }
-        }
-
-        Collections.sort(models, Comparator.comparingLong((LocalModel model) -> model.file.lastModified()).reversed());
-
-        Set<String> availableIds = new HashSet<>();
-        for (LocalModel model : models) {
-            availableIds.add(model.itemId);
-        }
-        expandedModelIds.retainAll(availableIds);
-
-        adapter.notifyDataSetChanged();
-
-        boolean empty = models.isEmpty();
+    private void setEmptyState(boolean empty) {
         binding.emptyStateText.setVisibility(empty ? View.VISIBLE : View.GONE);
         binding.localModelsList.setVisibility(empty ? View.GONE : View.VISIBLE);
-
-        requestMissingTitlesFromSupabase();
-    }
-
-    private void openModel(@NonNull LocalModel model) {
-        Intent intent = new Intent(this, ModelViewerActivity.class);
-        intent.putExtra(ModelViewerActivity.EXTRA_MODEL_PATH, model.file.getAbsolutePath());
-        intent.putExtra(ModelViewerActivity.EXTRA_MODEL_TITLE, model.title);
-        startActivity(intent);
-    }
-
-    private void requestMissingTitlesFromSupabase() {
-        if (repository == null) {
-            return;
-        }
-
-        for (LocalModel model : models) {
-            if (!model.title.equals(model.itemId) || pendingTitleRequests.contains(model.itemId)) {
-                continue;
-            }
-            pendingTitleRequests.add(model.itemId);
-            repository.fetchMarketplaceItemAsync(model.itemId, new SupabaseRepository.RepositoryCallback<MarketplaceItemRecord>() {
-                @Override
-                public void onSuccess(@Nullable MarketplaceItemRecord data) {
-                    pendingTitleRequests.remove(model.itemId);
-                    if (data == null || data.getTitle() == null || data.getTitle().trim().isEmpty()) {
-                        return;
-                    }
-                    String resolvedTitle = data.getTitle().trim();
-                    titleCache.put(model.itemId, resolvedTitle);
-                    persistTitleMetadata(model.itemId, resolvedTitle);
-                    boolean changed = false;
-                    for (LocalModel current : models) {
-                        if (current.itemId.equals(model.itemId) && !current.title.equals(resolvedTitle)) {
-                            current.title = resolvedTitle;
-                            changed = true;
-                        }
-                    }
-                    if (changed) {
-                        adapter.notifyDataSetChanged();
-                    }
-                }
-
-                @Override
-                public void onError(@NonNull String message, @Nullable Throwable throwable) {
-                    pendingTitleRequests.remove(model.itemId);
-                }
-            });
-        }
-    }
-
-    private void persistTitleMetadata(@NonNull String itemId, @NonNull String title) {
-        File metadataFile = new File(getCacheDir(), "models/" + itemId + "/metadata.json");
-        File parent = metadataFile.getParentFile();
-        if (parent == null || (!parent.exists() && !parent.mkdirs())) {
-            return;
-        }
-        try {
-            JSONObject metadata = new JSONObject();
-            metadata.put("item_id", itemId);
-            metadata.put("title", title);
-            java.nio.file.Files.write(
-                    metadataFile.toPath(),
-                    metadata.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),
-                    java.nio.file.StandardOpenOption.CREATE,
-                    java.nio.file.StandardOpenOption.TRUNCATE_EXISTING,
-                    java.nio.file.StandardOpenOption.WRITE
-            );
-        } catch (Exception ignored) {
-            // Keep UI responsive even if local metadata write fails.
-        }
     }
 
     @NonNull
-    private String formatModelSize(@NonNull LocalModel model) {
-        double sizeMb = model.file.length() / (1024.0 * 1024.0);
+    private File getLocalPlyFile(@NonNull String itemId) {
+        return new File(getCacheDir(), "models/" + itemId + "/model.ply");
+    }
+
+    private void onPrimaryAction(@NonNull GalleryItem item) {
+        if (item.isCached) {
+            openModel(item);
+        } else {
+            startDownload(item);
+        }
+    }
+
+    private void startDownload(@NonNull GalleryItem item) {
+        if (repository == null) {
+            return;
+        }
+        if (pendingDownloads.contains(item.itemId)) {
+            return;
+        }
+        if (item.modelUrl == null || item.modelUrl.trim().isEmpty()) {
+            Toast.makeText(this, R.string.model_missing_url, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (getCacheDir().getUsableSpace() < MIN_CACHE_FREE_BYTES) {
+            Toast.makeText(this, R.string.marketplace_not_enough_storage, Toast.LENGTH_LONG).show();
+            return;
+        }
+
+        pendingDownloads.add(item.itemId);
+        adapter.notifyDataSetChanged();
+
+        repository.downloadAndExtractPlyAsync(item.itemId, item.modelUrl, new SupabaseRepository.RepositoryCallback<File>() {
+            @Override
+            public void onSuccess(@Nullable File data) {
+                pendingDownloads.remove(item.itemId);
+                if (data != null && data.exists() && data.isFile()) {
+                    item.localPlyFile = data;
+                    item.isCached = true;
+                    Toast.makeText(LocalModelsActivity.this, R.string.marketplace_download_done, Toast.LENGTH_SHORT).show();
+                } else {
+                    Toast.makeText(LocalModelsActivity.this, R.string.model_extract_failed, Toast.LENGTH_SHORT).show();
+                }
+                adapter.notifyDataSetChanged();
+            }
+
+            @Override
+            public void onError(@NonNull String message, @Nullable Throwable throwable) {
+                pendingDownloads.remove(item.itemId);
+                adapter.notifyDataSetChanged();
+                Toast.makeText(LocalModelsActivity.this, getString(R.string.marketplace_download_failed, message), Toast.LENGTH_LONG).show();
+            }
+        });
+    }
+
+    private void openModel(@NonNull GalleryItem item) {
+        if (!item.localPlyFile.exists() || !item.localPlyFile.isFile()) {
+            Toast.makeText(this, R.string.marketplace_model_not_cached, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        Intent intent = new Intent(this, ModelViewerActivity.class);
+        intent.putExtra(ModelViewerActivity.EXTRA_MODEL_PATH, item.localPlyFile.getAbsolutePath());
+        intent.putExtra(ModelViewerActivity.EXTRA_MODEL_TITLE, item.title);
+        startActivity(intent);
+    }
+
+    @NonNull
+    private String formatModelSize(@NonNull GalleryItem item) {
+        if (!item.localPlyFile.exists() || !item.localPlyFile.isFile()) {
+            return getString(R.string.marketplace_not_downloaded);
+        }
+        double sizeMb = item.localPlyFile.length() / (1024.0 * 1024.0);
         return String.format(Locale.US, "%.2f MB", sizeMb);
     }
 
     @NonNull
-    private String formatUploadDate(@NonNull LocalModel model) {
-        return dateFormat.format(new Date(model.file.lastModified()));
+    private String formatUploadDate(@NonNull GalleryItem item) {
+        if (item.createdAt == null || item.createdAt.trim().isEmpty()) {
+            return "-";
+        }
+        try {
+            java.time.OffsetDateTime parsed = java.time.OffsetDateTime.parse(item.createdAt);
+            long timeMillis = parsed.toInstant().toEpochMilli();
+            return dateFormat.format(new Date(timeMillis));
+        } catch (Exception ignored) {
+            return item.createdAt;
+        }
     }
 
     private void toggleExpanded(@NonNull String itemId) {
@@ -203,53 +227,30 @@ public class LocalModelsActivity extends AppCompatActivity {
         adapter.notifyDataSetChanged();
     }
 
-    @NonNull
-    private String readTitleFromMetadata(@NonNull File modelFolder, @NonNull String fallbackId) {
-        File metadataFile = new File(modelFolder, "metadata.json");
-        if (metadataFile.exists() && metadataFile.isFile()) {
-            try {
-                byte[] bytes = java.nio.file.Files.readAllBytes(metadataFile.toPath());
-                JSONObject jsonObject = new JSONObject(new String(bytes, java.nio.charset.StandardCharsets.UTF_8));
-                String title = jsonObject.optString("title", "").trim();
-                if (!title.isEmpty()) {
-                    return title;
-                }
-            } catch (IOException | JSONException ignored) {
-                // Use folder id as fallback if metadata is missing or invalid.
-            }
-        }
-        return fallbackId;
-    }
-
-    @Nullable
-    private File chooseModelFile(@NonNull File folder) {
-        File splat = new File(folder, "model.splat");
-        if (splat.exists()) {
-            return splat;
-        }
-
-        File splatv = new File(folder, "model.splatv");
-        if (splatv.exists()) {
-            return splatv;
-        }
-
-        File ply = new File(folder, "model.ply");
-        if (ply.exists()) {
-            return ply;
-        }
-
-        return null;
-    }
-
-    private static final class LocalModel {
+    private static final class GalleryItem {
         private final String itemId;
-        private String title;
-        private final File file;
+        private final String title;
+        @Nullable
+        private final String createdAt;
+        @Nullable
+        private final String modelUrl;
+        private File localPlyFile;
+        private boolean isCached;
 
-        private LocalModel(@NonNull String itemId, @NonNull String title, @NonNull File file) {
+        private GalleryItem(
+                @NonNull String itemId,
+                @NonNull String title,
+                @Nullable String createdAt,
+                @Nullable String modelUrl,
+                @NonNull File localPlyFile,
+                boolean isCached
+        ) {
             this.itemId = itemId;
             this.title = title;
-            this.file = file;
+            this.createdAt = createdAt;
+            this.modelUrl = modelUrl;
+            this.localPlyFile = localPlyFile;
+            this.isCached = isCached;
         }
     }
 
@@ -257,12 +258,12 @@ public class LocalModelsActivity extends AppCompatActivity {
 
         @Override
         public int getCount() {
-            return models.size();
+            return items.size();
         }
 
         @Override
         public Object getItem(int position) {
-            return models.get(position);
+            return items.get(position);
         }
 
         @Override
@@ -282,22 +283,29 @@ public class LocalModelsActivity extends AppCompatActivity {
                 holder = (ViewHolder) convertView.getTag();
             }
 
-            LocalModel model = models.get(position);
-            boolean expanded = expandedModelIds.contains(model.itemId);
+            GalleryItem item = items.get(position);
+            boolean expanded = expandedModelIds.contains(item.itemId);
+            boolean downloading = pendingDownloads.contains(item.itemId);
 
-            holder.modelTitleText.setText(model.title);
-            holder.modelIdText.setText(getString(R.string.local_models_id_value, model.itemId));
-            holder.modelSizeText.setText(getString(R.string.local_models_size_value, formatModelSize(model)));
-            holder.modelUploadDateText.setText(getString(R.string.local_models_upload_date_value, formatUploadDate(model)));
+            holder.modelTitleText.setText(item.title);
+            holder.modelIdText.setText(getString(R.string.local_models_id_value, item.itemId));
+            holder.modelSizeText.setText(getString(R.string.local_models_size_value, formatModelSize(item)));
+            holder.modelUploadDateText.setText(getString(R.string.local_models_upload_date_value, formatUploadDate(item)));
             holder.detailsContainer.setVisibility(expanded ? View.VISIBLE : View.GONE);
             holder.toggleExpandButton.setImageResource(
                     expanded ? android.R.drawable.arrow_up_float : android.R.drawable.arrow_down_float
             );
 
-            View.OnClickListener toggleListener = view -> toggleExpanded(model.itemId);
+            holder.openModelButton.setEnabled(!downloading);
+            holder.openModelButton.setText(item.isCached
+                    ? getString(R.string.marketplace_view_model)
+                    : (downloading ? getString(R.string.marketplace_downloading) : getString(R.string.marketplace_download))
+            );
+
+            View.OnClickListener toggleListener = view -> toggleExpanded(item.itemId);
             holder.headerContainer.setOnClickListener(toggleListener);
             holder.toggleExpandButton.setOnClickListener(toggleListener);
-            holder.openModelButton.setOnClickListener(view -> openModel(model));
+            holder.openModelButton.setOnClickListener(view -> onPrimaryAction(item));
 
             return convertView;
         }
@@ -311,7 +319,7 @@ public class LocalModelsActivity extends AppCompatActivity {
         private final View detailsContainer;
         private final TextView modelSizeText;
         private final TextView modelUploadDateText;
-        private final View openModelButton;
+        private final Button openModelButton;
 
         private ViewHolder(@NonNull View root) {
             headerContainer = root.findViewById(R.id.header_container);
