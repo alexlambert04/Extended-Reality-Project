@@ -69,7 +69,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginTop="8dp"
                 android:text="@string/recording_recommendation_hint"
-                android:textColor="@android:color/holo_green_light"
+                android:textColor="@color/hint_positive"
                 android:textSize="13sp"
                 android:visibility="gone" />
         </LinearLayout>

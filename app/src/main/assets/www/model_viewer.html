@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Model Viewer</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #101010;
+      color: #f0f0f0;
+      font-family: Arial, sans-serif;
+    }
+    #status {
+      position: absolute;
+      top: 8px;
+      left: 8px;
+      padding: 6px 10px;
+      background: rgba(0, 0, 0, 0.5);
+      border-radius: 6px;
+      font-size: 12px;
+      z-index: 3;
+      max-width: calc(100% - 24px);
+    }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="status">Initializing gsplat viewer...</div>
+
+  <script>
+    const statusEl = document.getElementById('status');
+
+    function setStatus(text) {
+      statusEl.textContent = text;
+    }
+
+    window.addEventListener('error', function (event) {
+      setStatus('JS error: ' + event.message);
+      console.error('Viewer JS error', event.error || event.message);
+    });
+
+    window.addEventListener('unhandledrejection', function (event) {
+      setStatus('Promise error: ' + event.reason);
+      console.error('Viewer promise rejection', event.reason);
+    });
+  </script>
+
+  <script type="module">
+    import * as SPLAT from './libs/gsplat/index.es.js';
+
+    function getParam(name) {
+      const params = new URLSearchParams(window.location.search);
+      return params.get(name);
+    }
+
+    function detectPlyFormat(arrayBuffer) {
+      const view = new Uint8Array(arrayBuffer, 0, Math.min(arrayBuffer.byteLength, 4096));
+      const header = new TextDecoder('utf-8').decode(view);
+      const match = header.match(/format\s+([^\r\n]+)/i);
+      if (!match) {
+        return undefined;
+      }
+
+      // PLY header often has "binary_little_endian 1.0"; gsplat expects token only.
+      const raw = match[1].trim();
+      return raw.split(/\s+/)[0];
+    }
+
+    async function loadModel(scene, modelUrl, onProgress) {
+      try {
+        await SPLAT.Loader.LoadAsync(modelUrl, scene, onProgress);
+        return;
+      } catch (primaryError) {
+        // This is expected for some KIRI PLY variants; fallback can still succeed.
+        console.warn('Primary gsplat loader failed, trying PLY fallback', primaryError);
+
+        if (!modelUrl.toLowerCase().endsWith('.ply')) {
+          throw primaryError;
+        }
+
+        setStatus('Primary load failed, trying PLY fallback...');
+        const response = await fetch(modelUrl);
+        if (!response.ok) {
+          throw new Error('PLY fallback fetch failed: HTTP ' + response.status);
+        }
+
+        const arrayBuffer = await response.arrayBuffer();
+        const plyFormatToken = detectPlyFormat(arrayBuffer);
+        console.log('Detected PLY format token:', plyFormatToken || 'unknown');
+        console.log('PLY byte length:', arrayBuffer.byteLength);
+
+        try {
+          // Let gsplat choose parser behavior internally; explicit format tokens are rejected here.
+          SPLAT.PLYLoader.LoadFromArrayBuffer(arrayBuffer, scene);
+          console.log('PLY fallback parser succeeded.');
+          return;
+        } catch (fallbackError) {
+          console.error('PLY fallback parser failed', fallbackError);
+          throw fallbackError;
+        }
+      }
+    }
+
+    async function main() {
+      const modelUrl = getParam('model') || getParam('ply');
+      if (!modelUrl) {
+        setStatus('No model path provided.');
+        throw new Error('Missing model query parameter');
+      }
+
+      console.log('Model URL:', modelUrl);
+
+      setStatus('Creating gsplat scene...');
+      const scene = new SPLAT.Scene();
+      const camera = new SPLAT.Camera();
+      const renderer = new SPLAT.WebGLRenderer();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      document.body.appendChild(renderer.canvas);
+
+      const controls = new SPLAT.OrbitControls(camera, renderer.canvas);
+
+      setStatus('Loading splat data...');
+      await loadModel(scene, modelUrl, function (progress) {
+        const pct = Math.max(0, Math.min(100, Math.round(progress * 100)));
+        setStatus('Loading splat data... ' + pct + '%');
+      });
+
+      setStatus('Model loaded. Drag to rotate, pinch to zoom.');
+
+      function renderFrame() {
+        controls.update();
+        renderer.render(scene, camera);
+        requestAnimationFrame(renderFrame);
+      }
+      requestAnimationFrame(renderFrame);
+
+      window.addEventListener('resize', function () {
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+    }
+
+    main().catch(function (error) {
+      const message = error && error.message ? error.message : String(error);
+      setStatus('Viewer init failed: ' + message);
+      console.error('gsplat viewer init failed', error);
+    });
+  </script>
+</body>
+</html>
+

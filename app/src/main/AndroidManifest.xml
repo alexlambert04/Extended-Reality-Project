@@ -37,6 +37,14 @@
             android:name=".camera.CameraCaptureActivity"
             android:exported="false"
             android:theme="@style/Theme.ExtendedRealityProject" />
+        <activity
+            android:name=".camera.ModelViewerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ExtendedRealityProject" />
+        <activity
+            android:name=".camera.LocalModelsActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ExtendedRealityProject" />
 
         <activity
             android:name=".MainActivity"

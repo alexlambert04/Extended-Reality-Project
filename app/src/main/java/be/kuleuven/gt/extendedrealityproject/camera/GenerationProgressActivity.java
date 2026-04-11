@@ -4,11 +4,13 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.view.View;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -35,6 +37,8 @@ public class GenerationProgressActivity extends AppCompatActivity {
     private String itemId;
     private String title;
     private String videoPath;
+    private String latestModelUrl;
+    private boolean downloadInProgress;
 
     private final Runnable pollRunnable = new Runnable() {
         @Override
@@ -76,6 +80,8 @@ public class GenerationProgressActivity extends AppCompatActivity {
 
         binding.retryButton.setOnClickListener(view -> retryStartJob());
         binding.backHomeButton.setOnClickListener(view -> backHome());
+        binding.viewModelButton.setOnClickListener(view -> onViewModelClicked());
+        binding.viewModelButton.setVisibility(View.GONE);
 
         attachRealtime();
         fetchLatest();
@@ -149,6 +155,7 @@ public class GenerationProgressActivity extends AppCompatActivity {
     private void render(@NonNull MarketplaceItemRecord item, @NonNull String source) {
         String userStage = mapStage(item.getStatus());
         binding.progressStageValue.setText(userStage);
+        latestModelUrl = item.getModelUrl();
 
         String updatedAt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.US).format(new Date());
         StringBuilder debug = new StringBuilder();
@@ -170,6 +177,50 @@ public class GenerationProgressActivity extends AppCompatActivity {
                 sessionStore.clear();
             }
         }
+
+        boolean canViewModel = item.getStatus() == PipelineStatus.READY && latestModelUrl != null && !latestModelUrl.trim().isEmpty();
+        binding.viewModelButton.setVisibility(canViewModel ? View.VISIBLE : View.GONE);
+        binding.viewModelButton.setEnabled(canViewModel && !downloadInProgress);
+    }
+
+    private void onViewModelClicked() {
+        if (downloadInProgress) {
+            return;
+        }
+        if (latestModelUrl == null || latestModelUrl.trim().isEmpty()) {
+            Toast.makeText(this, R.string.model_missing_url, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        downloadInProgress = true;
+        binding.viewModelButton.setEnabled(false);
+        appendInfo(getString(R.string.model_download_started));
+
+        repository.downloadAndExtractModelAsync(itemId, latestModelUrl, new SupabaseRepository.RepositoryCallback<File>() {
+            @Override
+            public void onSuccess(File data) {
+                downloadInProgress = false;
+                binding.viewModelButton.setEnabled(true);
+                if (data == null) {
+                    appendInfo(getString(R.string.model_extract_failed));
+                    Toast.makeText(GenerationProgressActivity.this, R.string.model_extract_failed, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+                appendInfo(getString(R.string.model_ready_local, data.getAbsolutePath()));
+                Intent intent = new Intent(GenerationProgressActivity.this, ModelViewerActivity.class);
+                intent.putExtra(ModelViewerActivity.EXTRA_MODEL_PATH, data.getAbsolutePath());
+                intent.putExtra(ModelViewerActivity.EXTRA_MODEL_TITLE, title);
+                startActivity(intent);
+            }
+
+            @Override
+            public void onError(String message, Throwable throwable) {
+                downloadInProgress = false;
+                binding.viewModelButton.setEnabled(true);
+                appendInfo("Model download error: " + message);
+                Toast.makeText(GenerationProgressActivity.this, R.string.model_download_failed, Toast.LENGTH_SHORT).show();
+            }
+        });
     }
 
     private void appendInfo(@NonNull String text) {
@@ -209,4 +260,3 @@ public class GenerationProgressActivity extends AppCompatActivity {
         finish();
     }
 }
-

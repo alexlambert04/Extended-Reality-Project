@@ -36,4 +36,25 @@ This checklist tracks the Android-side implementation for the recording + regist
 - [x] Show recorded file size on the registration screen for easier debugging and operator visibility.
 - [x] Add direct jump-back to camera from oversize error with a one-time shorter recording hint.
 
+## Next Phase: Model Retrieval + Visualization (MVP)
 
+- [x] Extend `SupabaseRepository` with model artifact retrieval (`model_url` download to cache) and ZIP extraction for first `.ply` file.
+- [x] Add a `View Model` action to `GenerationProgressActivity` that is enabled only when status is `READY`.
+- [x] Add visual debug states for model retrieval (`download started`, `extract success`, and error paths) in progress screen output.
+- [x] Build `ModelViewerActivity` with a WebView-based 3D viewer and local `.ply` loading.
+- [x] Replace the old Three.js `PLYLoader` viewer with a local bundled `gsplat.js` WebView viewer implementation.
+
+## Local Model Library (Device Storage)
+
+- [x] Add a `View Local Models` button on `MainActivity`.
+- [x] Build `LocalModelsActivity` listing cached models found under app cache (`cache/models/*/model.ply`).
+- [x] Allow opening any local model directly in `ModelViewerActivity` without waiting for new KIRI processing.
+- [x] Add refresh and empty-state UI for local model browsing.
+- [ ] Pause further Local Model Library feature expansion until core gsplat viewer behavior is validated on target devices.
+
+## gsplat Migration (Now Active)
+
+- [x] Replace CDN-hosted viewer scripts with locally bundled assets for deterministic runtime behavior.
+- [x] Integrate a `gsplat` renderer path in the viewer.
+- [x] Add `.splat` direct-loading optimization path (fallback to `.ply` where needed).
+- [ ] Define conversion/asset contract for direct local scans (before KIRI) so preview mode can visualize local intermediate data.

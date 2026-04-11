@@ -7,6 +7,7 @@ import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 
 import be.kuleuven.gt.extendedrealityproject.camera.CameraCaptureActivity;
+import be.kuleuven.gt.extendedrealityproject.camera.LocalModelsActivity;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityMainBinding;
 
 public class MainActivity extends AppCompatActivity {
@@ -28,6 +29,10 @@ public class MainActivity extends AppCompatActivity {
 
         binding.openCameraButton.setOnClickListener(view ->
                 startActivity(new Intent(this, CameraCaptureActivity.class))
+        );
+
+        binding.openLocalModelsButton.setOnClickListener(view ->
+                startActivity(new Intent(this, LocalModelsActivity.class))
         );
 
         binding.capturePoseButton.setOnClickListener(view -> {

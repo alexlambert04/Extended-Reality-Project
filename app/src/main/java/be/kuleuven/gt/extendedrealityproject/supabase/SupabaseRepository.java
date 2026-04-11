@@ -12,10 +12,15 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import be.kuleuven.gt.extendedrealityproject.BuildConfig;
 import okhttp3.MediaType;
@@ -32,6 +37,7 @@ public class SupabaseRepository {
 
     private final String baseUrl;
     private final String anonKey;
+    private final Context appContext;
     private final OkHttpClient httpClient;
     private final ExecutorService executor;
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
@@ -43,6 +49,7 @@ public class SupabaseRepository {
     public SupabaseRepository(@NonNull Context context, @NonNull OkHttpClient httpClient) {
         this.baseUrl = stripTrailingSlash(BuildConfig.SUPABASE_URL);
         this.anonKey = BuildConfig.SUPABASE_ANON_KEY;
+        this.appContext = context.getApplicationContext();
         this.httpClient = httpClient;
         this.executor = Executors.newSingleThreadExecutor();
     }
@@ -99,6 +106,21 @@ public class SupabaseRepository {
             try {
                 invokeStartKiriJob(itemId);
                 postSuccess(callback, null);
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
+    public void downloadAndExtractModelAsync(
+            @NonNull String itemId,
+            @NonNull String modelUrl,
+            @NonNull RepositoryCallback<File> callback
+    ) {
+        executor.execute(() -> {
+            try {
+                File plyFile = downloadAndExtractModel(itemId, modelUrl);
+                postSuccess(callback, plyFile);
             } catch (Exception exception) {
                 postError(callback, userMessage(exception), exception);
             }
@@ -281,6 +303,117 @@ public class SupabaseRepository {
             value = value.substring(0, value.length() - 1);
         }
         return value;
+    }
+
+    @NonNull
+    private File downloadAndExtractModel(@NonNull String itemId, @NonNull String modelUrl) throws IOException {
+        if (modelUrl.trim().isEmpty()) {
+            throw new IOException("Model URL is empty.");
+        }
+
+        File outputDir = new File(appContext.getCacheDir(), "models/" + itemId);
+        if (!outputDir.exists() && !outputDir.mkdirs()) {
+            throw new IOException("Could not create model cache directory.");
+        }
+
+        File zipFile = new File(outputDir, "model.zip");
+        downloadToFile(modelUrl, zipFile);
+
+        File modelFile = extractPreferredModel(zipFile, outputDir);
+        if (modelFile == null) {
+            throw new IOException("model.zip did not contain a supported model (.splat, .splatv, .ply).");
+        }
+        return modelFile;
+    }
+
+    private void downloadToFile(@NonNull String url, @NonNull File outputFile) throws IOException {
+        Request request = new Request.Builder()
+                .url(url)
+                .addHeader("Accept", "application/octet-stream")
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException(errorFrom(response));
+            }
+
+            ResponseBody body = response.body();
+            if (body == null) {
+                throw new IOException("Server returned an empty model response.");
+            }
+
+            try (InputStream inputStream = body.byteStream();
+                 FileOutputStream fileOutputStream = new FileOutputStream(outputFile, false)) {
+                byte[] buffer = new byte[16 * 1024];
+                int read;
+                while ((read = inputStream.read(buffer)) != -1) {
+                    fileOutputStream.write(buffer, 0, read);
+                }
+                fileOutputStream.flush();
+            }
+        }
+    }
+
+    @Nullable
+    private File extractPreferredModel(@NonNull File zipFile, @NonNull File outputDir) throws IOException {
+        try (ZipInputStream zipInputStream = new ZipInputStream(new java.io.FileInputStream(zipFile))) {
+            ZipEntry entry;
+            File selectedFile = null;
+            int selectedPriority = Integer.MAX_VALUE;
+
+            while ((entry = zipInputStream.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                String entryName = entry.getName();
+                String lowerName = entryName.toLowerCase(Locale.US);
+
+                int priority;
+                String outputName;
+                if (lowerName.endsWith(".splat")) {
+                    priority = 0;
+                    outputName = "model.splat";
+                } else if (lowerName.endsWith(".splatv")) {
+                    priority = 1;
+                    outputName = "model.splatv";
+                } else if (lowerName.endsWith(".ply")) {
+                    priority = 2;
+                    outputName = "model.ply";
+                } else {
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                if (priority > selectedPriority) {
+                    // A better candidate was already extracted earlier.
+                    zipInputStream.closeEntry();
+                    continue;
+                }
+
+                File outputFile = new File(outputDir, outputName);
+                try (FileOutputStream fileOutputStream = new FileOutputStream(outputFile, false)) {
+                    byte[] buffer = new byte[16 * 1024];
+                    int read;
+                    while ((read = zipInputStream.read(buffer)) != -1) {
+                        fileOutputStream.write(buffer, 0, read);
+                    }
+                    fileOutputStream.flush();
+                }
+                zipInputStream.closeEntry();
+
+                selectedFile = outputFile;
+                selectedPriority = priority;
+
+                if (selectedPriority == 0) {
+                    // .splat is the preferred format for gsplat viewer.
+                    break;
+                }
+            }
+
+            return selectedFile;
+        }
     }
 
     public interface RepositoryCallback<T> {

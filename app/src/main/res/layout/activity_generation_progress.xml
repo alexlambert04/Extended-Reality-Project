@@ -57,7 +57,7 @@
         android:layout_marginTop="8dp"
         android:background="#11000000"
         android:padding="12dp"
-        app:layout_constraintBottom_toTopOf="@id/retry_button"
+        app:layout_constraintBottom_toTopOf="@id/view_model_button"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@id/progress_debug_label">
@@ -69,6 +69,18 @@
             android:textIsSelectable="true"
             tools:text="Item ID: ..." />
     </ScrollView>
+
+    <com.google.android.material.button.MaterialButton
+        android:id="@+id/view_model_button"
+        style="@style/Widget.MaterialComponents.Button"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="8dp"
+        android:text="@string/view_model"
+        app:icon="@android:drawable/ic_menu_view"
+        app:layout_constraintBottom_toTopOf="@id/retry_button"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/retry_button"

@@ -87,6 +87,7 @@ dependencies {
     implementation(libs.camera.video)
     implementation(libs.camera.view)
     implementation(libs.okhttp)
+    implementation(libs.webkit)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
