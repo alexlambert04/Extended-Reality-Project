@@ -65,4 +65,18 @@
     <string name="local_models_title">Local Models on Device</string>
     <string name="local_models_refresh">Refresh List</string>
     <string name="local_models_empty">No local models found yet. Generate one first, then come back here.</string>
+    <string name="local_models_expand">Expand model details</string>
+    <string name="local_models_open_model">Open Model</string>
+    <string name="local_models_id_value">ID: %1$s</string>
+    <string name="local_models_size_value">Model size: %1$s</string>
+    <string name="local_models_upload_date_value">Upload date: %1$s</string>
+    <string name="main_record_card_hint">Capture a guided object scan and move to registration for cloud processing.</string>
+    <string name="main_local_models_card_hint">Browse and open models already downloaded to this device.</string>
+    <string name="main_record_info_button">More info about recording flow</string>
+    <string name="main_local_models_info_button">More info about local model library</string>
+    <string name="main_record_info_title">About Record Object</string>
+    <string name="main_record_info_message">Record Object opens the camera capture flow where you create a scan video. After recording, you can title it and send it for model generation.</string>
+    <string name="main_local_models_info_title">About Local Models</string>
+    <string name="main_local_models_info_message">View Local Models shows model files stored on this device. Expand each card to inspect size and upload date, then open a model directly in the viewer.</string>
+    <string name="info_dialog_close">Close</string>
 </resources>

@@ -58,3 +58,34 @@ This checklist tracks the Android-side implementation for the recording + regist
 - [x] Integrate a `gsplat` renderer path in the viewer.
 - [x] Add `.splat` direct-loading optimization path (fallback to `.ply` where needed).
 - [ ] Define conversion/asset contract for direct local scans (before KIRI) so preview mode can visualize local intermediate data.
+
+## Planning: Local Library Reliability + Shared Model Discovery
+
+### Investigate Missing Local File
+
+- [ ] Trace model lifecycle around `SupabaseRepository.downloadAndExtractModel`, `LocalModelsActivity.loadModels`, and `ModelViewerActivity` path checks to map create/read/fail points.
+- [ ] Confirm current storage path behavior (`cache/models/{item_id}`) and document volatility causes (OS cache cleanup, low-storage eviction, and manual clear-cache).
+- [ ] Add root-cause diagnostics for disappearances (`item_id`, absolute path, file size, extraction outcome, viewer open result).
+- [ ] Write an incident note template so when a file disappears we can classify: never downloaded, extraction failed, overwritten, cache-evicted, or path mismatch.
+
+### Local Capacity and Scale Strategy
+
+- [ ] Define persistent storage target for long-lived models (`filesDir/models`) and treat `cacheDir` as temporary.
+- [ ] Track metadata per model (`item_id`, `title`, format, bytes, created_at, last_accessed_at, source, pinned flag).
+- [ ] Set storage policy thresholds (warning budget + hard cap) and implement LRU eviction with pin protection.
+- [ ] Add startup migration from `cache/models/*` to persistent storage and safe cleanup for orphaned files.
+- [ ] Add operator/user visibility for storage usage (total bytes, model count, and cleanup actions).
+
+### Supabase Models Not Created by Current User
+
+- [ ] Define browse scope: `My Models`, `Shared/Public`, and optional `Team` views with separate filters.
+- [ ] Extend repository APIs with paginated list queries for `READY` items (`limit`, `offset`/cursor, sort, optional owner filter, search text).
+- [ ] Align Supabase RLS/storage policies for read access to permitted non-owner items and artifacts.
+- [ ] Add UI flow for remote discovery (list cards, pagination/loading states, preview metadata, download/open actions).
+- [ ] Cache downloaded remote models into local library with source attribution and deduping by `item_id`.
+
+### Decisions to Lock Before Build-Out
+
+- [ ] Decide sharing model: anonymous public feed vs authenticated user/org feed.
+- [ ] Decide storage policy strictness: automatic LRU only vs user pinning + manual cleanup controls.
+- [ ] Decide remote sync behavior: on-demand fetch only vs optional background refresh.
