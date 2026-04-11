@@ -297,10 +297,22 @@ public class LocalModelsActivity extends AppCompatActivity {
             );
 
             holder.openModelButton.setEnabled(!downloading);
+            holder.openModelButton.setAlpha(downloading ? 0.7f : 1.0f);
             holder.openModelButton.setText(item.isCached
                     ? getString(R.string.marketplace_view_model)
                     : (downloading ? getString(R.string.marketplace_downloading) : getString(R.string.marketplace_download))
             );
+
+            if (downloading) {
+                holder.modelCacheBadge.setText(R.string.marketplace_badge_downloading);
+                holder.modelCacheBadge.setBackgroundResource(R.drawable.badge_state_downloading);
+            } else if (item.isCached) {
+                holder.modelCacheBadge.setText(R.string.marketplace_badge_cached);
+                holder.modelCacheBadge.setBackgroundResource(R.drawable.badge_state_cached);
+            } else {
+                holder.modelCacheBadge.setText(R.string.marketplace_badge_remote);
+                holder.modelCacheBadge.setBackgroundResource(R.drawable.badge_state_remote);
+            }
 
             View.OnClickListener toggleListener = view -> toggleExpanded(item.itemId);
             holder.headerContainer.setOnClickListener(toggleListener);
@@ -315,6 +327,7 @@ public class LocalModelsActivity extends AppCompatActivity {
         private final View headerContainer;
         private final TextView modelTitleText;
         private final TextView modelIdText;
+        private final TextView modelCacheBadge;
         private final ImageButton toggleExpandButton;
         private final View detailsContainer;
         private final TextView modelSizeText;
@@ -325,6 +338,7 @@ public class LocalModelsActivity extends AppCompatActivity {
             headerContainer = root.findViewById(R.id.header_container);
             modelTitleText = root.findViewById(R.id.model_title_text);
             modelIdText = root.findViewById(R.id.model_id_text);
+            modelCacheBadge = root.findViewById(R.id.model_cache_badge);
             toggleExpandButton = root.findViewById(R.id.toggle_expand_button);
             detailsContainer = root.findViewById(R.id.details_container);
             modelSizeText = root.findViewById(R.id.model_size_text);

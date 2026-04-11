@@ -91,4 +91,7 @@
     <string name="marketplace_download_done">Model downloaded to local cache.</string>
     <string name="marketplace_download_failed">Download failed: %1$s</string>
     <string name="marketplace_load_failed">Could not load marketplace models: %1$s</string>
+    <string name="marketplace_badge_cached">Cached</string>
+    <string name="marketplace_badge_remote">Remote</string>
+    <string name="marketplace_badge_downloading">Downloading</string>
 </resources>
