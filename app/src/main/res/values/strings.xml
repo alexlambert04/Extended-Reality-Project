@@ -55,6 +55,9 @@
     <string name="viewer_missing_model">Model file is missing on this device.</string>
     <string name="viewer_loading_debug">Loading local file: %1$s</string>
     <string name="viewer_web_error">Viewer web error: %1$s</string>
+    <string name="viewer_debug_panel_title">Viewer debug output</string>
+    <string name="viewer_debug_show">Show</string>
+    <string name="viewer_debug_hide">Hide</string>
     <string name="shorter_recording_hint">This recording is above upload limits. Please scan again with a shorter video (about 30 to 60 seconds).</string>
     <string name="video_file_missing">Recorded video file not found. Please record again.</string>
     <string name="video_too_large_title">Video Too Large</string>

@@ -1,6 +1,7 @@
 package be.kuleuven.gt.extendedrealityproject.camera;
 
 import android.os.Bundle;
+import android.text.method.ScrollingMovementMethod;
 import android.util.Log;
 import android.webkit.ConsoleMessage;
 import android.webkit.MimeTypeMap;
@@ -38,6 +39,7 @@ public class ModelViewerActivity extends AppCompatActivity {
 
     private ActivityModelViewerBinding binding;
     private WebViewAssetLoader assetLoader;
+    private boolean isDebugExpanded = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,6 +91,9 @@ public class ModelViewerActivity extends AppCompatActivity {
                 viewerUrl
         );
         binding.viewerDebugText.setText(preflight);
+        binding.viewerDebugText.setMovementMethod(new ScrollingMovementMethod());
+        binding.debugToggleRow.setOnClickListener(view -> toggleDebugPanel());
+        updateDebugPanelState();
 
         setupWebView(binding.modelWebView);
         binding.modelWebView.loadUrl(viewerUrl);
@@ -153,6 +158,16 @@ public class ModelViewerActivity extends AppCompatActivity {
     private void appendDebug(@NonNull String line) {
         CharSequence current = binding.viewerDebugText.getText();
         binding.viewerDebugText.setText((current + "\n" + line).trim());
+    }
+
+    private void toggleDebugPanel() {
+        isDebugExpanded = !isDebugExpanded;
+        updateDebugPanelState();
+    }
+
+    private void updateDebugPanelState() {
+        binding.viewerDebugText.setVisibility(isDebugExpanded ? android.view.View.VISIBLE : android.view.View.GONE);
+        binding.debugToggleLabel.setText(isDebugExpanded ? R.string.viewer_debug_hide : R.string.viewer_debug_show);
     }
 
     @NonNull

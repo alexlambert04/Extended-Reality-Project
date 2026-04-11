@@ -20,9 +20,11 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 import org.json.JSONException;
@@ -30,14 +32,20 @@ import org.json.JSONObject;
 
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityLocalModelsBinding;
+import be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord;
+import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
 public class LocalModelsActivity extends AppCompatActivity {
 
     private ActivityLocalModelsBinding binding;
     private final List<LocalModel> models = new ArrayList<>();
     private final Set<String> expandedModelIds = new HashSet<>();
+    private final Set<String> pendingTitleRequests = new HashSet<>();
+    private final Map<String, String> titleCache = new HashMap<>();
     private final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.US);
     private LocalModelsAdapter adapter;
+    @Nullable
+    private SupabaseRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -48,8 +56,19 @@ public class LocalModelsActivity extends AppCompatActivity {
         binding.refreshModelsButton.setOnClickListener(view -> loadModels());
         adapter = new LocalModelsAdapter();
         binding.localModelsList.setAdapter(adapter);
+        if (SupabaseRepository.isConfigured()) {
+            repository = new SupabaseRepository(this);
+        }
 
         loadModels();
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (repository != null) {
+            repository.shutdown();
+        }
+        super.onDestroy();
     }
 
     @Override
@@ -68,7 +87,11 @@ public class LocalModelsActivity extends AppCompatActivity {
                 File modelFile = chooseModelFile(folder);
                 if (modelFile != null && modelFile.exists() && modelFile.isFile() && modelFile.length() > 0) {
                     String itemId = folder.getName();
-                    String title = readTitleFromMetadata(folder, itemId);
+                    String title = titleCache.get(itemId);
+                    if (title == null || title.trim().isEmpty()) {
+                        title = readTitleFromMetadata(folder, itemId);
+                    }
+                    titleCache.put(itemId, title);
                     models.add(new LocalModel(itemId, title, modelFile));
                 }
             }
@@ -87,13 +110,77 @@ public class LocalModelsActivity extends AppCompatActivity {
         boolean empty = models.isEmpty();
         binding.emptyStateText.setVisibility(empty ? View.VISIBLE : View.GONE);
         binding.localModelsList.setVisibility(empty ? View.GONE : View.VISIBLE);
+
+        requestMissingTitlesFromSupabase();
     }
 
     private void openModel(@NonNull LocalModel model) {
         Intent intent = new Intent(this, ModelViewerActivity.class);
         intent.putExtra(ModelViewerActivity.EXTRA_MODEL_PATH, model.file.getAbsolutePath());
-        intent.putExtra(ModelViewerActivity.EXTRA_MODEL_TITLE, model.itemId);
+        intent.putExtra(ModelViewerActivity.EXTRA_MODEL_TITLE, model.title);
         startActivity(intent);
+    }
+
+    private void requestMissingTitlesFromSupabase() {
+        if (repository == null) {
+            return;
+        }
+
+        for (LocalModel model : models) {
+            if (!model.title.equals(model.itemId) || pendingTitleRequests.contains(model.itemId)) {
+                continue;
+            }
+            pendingTitleRequests.add(model.itemId);
+            repository.fetchMarketplaceItemAsync(model.itemId, new SupabaseRepository.RepositoryCallback<MarketplaceItemRecord>() {
+                @Override
+                public void onSuccess(@Nullable MarketplaceItemRecord data) {
+                    pendingTitleRequests.remove(model.itemId);
+                    if (data == null || data.getTitle() == null || data.getTitle().trim().isEmpty()) {
+                        return;
+                    }
+                    String resolvedTitle = data.getTitle().trim();
+                    titleCache.put(model.itemId, resolvedTitle);
+                    persistTitleMetadata(model.itemId, resolvedTitle);
+                    boolean changed = false;
+                    for (LocalModel current : models) {
+                        if (current.itemId.equals(model.itemId) && !current.title.equals(resolvedTitle)) {
+                            current.title = resolvedTitle;
+                            changed = true;
+                        }
+                    }
+                    if (changed) {
+                        adapter.notifyDataSetChanged();
+                    }
+                }
+
+                @Override
+                public void onError(@NonNull String message, @Nullable Throwable throwable) {
+                    pendingTitleRequests.remove(model.itemId);
+                }
+            });
+        }
+    }
+
+    private void persistTitleMetadata(@NonNull String itemId, @NonNull String title) {
+        File metadataFile = new File(getCacheDir(), "models/" + itemId + "/metadata.json");
+        File parent = metadataFile.getParentFile();
+        if (parent == null || (!parent.exists() && !parent.mkdirs())) {
+            return;
+        }
+        try {
+            JSONObject metadata = new JSONObject();
+            metadata.put("item_id", itemId);
+            metadata.put("title", title);
+            java.nio.file.Files.write(
+                    metadataFile.toPath(),
+                    metadata.toString().getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    java.nio.file.StandardOpenOption.CREATE,
+                    java.nio.file.StandardOpenOption.TRUNCATE_EXISTING,
+                    java.nio.file.StandardOpenOption.WRITE
+            );
+        } catch (Exception ignored) {
+            // Keep UI responsive even if local metadata write fails.
+        }
     }
 
     @NonNull
@@ -156,7 +243,7 @@ public class LocalModelsActivity extends AppCompatActivity {
 
     private static final class LocalModel {
         private final String itemId;
-        private final String title;
+        private String title;
         private final File file;
 
         private LocalModel(@NonNull String itemId, @NonNull String title, @NonNull File file) {
