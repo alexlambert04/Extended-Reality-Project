@@ -142,3 +142,8 @@ This attribution (`used_api_key_id`) is critical: without it, webhook downloads 
     * The app opens a hidden HTML page in a WebView where `gsplat.js` (or WebXR viewer) is integrated.
     * The app passes the local file path of the extracted `model.ply` to the WebView.
     * The 3D Gaussian Splat appears smoothly and manipulable on the user's screen.
+
+---
+## Full flow schematic
+
+![KIRI Engine API Workflow-2026-04-12-225645.png](KIRI%20Engine%20API%20Workflow-2026-04-12-225645.png)
