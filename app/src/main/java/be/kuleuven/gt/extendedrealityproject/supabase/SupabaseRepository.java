@@ -3,6 +3,7 @@ package be.kuleuven.gt.extendedrealityproject.supabase;
 import android.content.Context;
 import android.os.Handler;
 import android.os.Looper;
+import android.util.Log;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -36,6 +37,8 @@ public class SupabaseRepository {
 
     private static final MediaType JSON_MEDIA = MediaType.parse("application/json; charset=utf-8");
     private static final MediaType VIDEO_MEDIA = MediaType.parse("video/mp4");
+    private static final String CREDITS_EXHAUSTED_CODE = "CREDITS_EXHAUSTED";
+    private static final String TAG = "SupabaseRepository";
 
     private final String baseUrl;
     private final String anonKey;
@@ -120,6 +123,16 @@ public class SupabaseRepository {
             try {
                 invokeStartKiriJob(itemId);
                 postSuccess(callback, null);
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
+    public void fetchAvailableScansAsync(@NonNull RepositoryCallback<Integer> callback) {
+        executor.execute(() -> {
+            try {
+                postSuccess(callback, fetchAvailableScans());
             } catch (Exception exception) {
                 postError(callback, userMessage(exception), exception);
             }
@@ -259,6 +272,88 @@ public class SupabaseRepository {
         }
     }
 
+    private int fetchAvailableScans() throws IOException, JSONException {
+        Log.d(TAG, "Fetching available scans via RPC get_available_credits");
+        Request request = baseApiRequest(baseUrl + "/rest/v1/rpc/get_available_credits")
+                .addHeader("Content-Type", "application/json")
+                .post(RequestBody.create("{}", JSON_MEDIA))
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                String bodyText = readBodyText(response.body());
+                Log.e(TAG, "Credits RPC failed: HTTP " + response.code() + " body=" + bodyText);
+                throw httpError(response, bodyText);
+            }
+
+            ResponseBody responseBody = response.body();
+            if (responseBody == null) {
+                throw new IOException("Server returned an empty response.");
+            }
+
+            String rawBody = responseBody.string();
+            Log.d(TAG, "Credits RPC raw response: " + rawBody);
+            int parsed = parseCreditsRpcResponse(rawBody);
+            Log.d(TAG, "Credits RPC parsed value: " + parsed);
+            return parsed;
+        }
+    }
+
+    private int parseCreditsRpcResponse(@NonNull String rawBody) throws JSONException {
+        String body = rawBody.trim();
+        if (body.isEmpty()) {
+            return 0;
+        }
+
+        // Common scalar response for SQL functions returning an integer.
+        if (body.matches("^-?\\d+$")) {
+            return Math.max(0, Integer.parseInt(body));
+        }
+
+        // Possible array/object response shapes depending on PostgREST function settings.
+        if (body.startsWith("[")) {
+            JSONArray array = new JSONArray(body);
+            if (array.length() == 0) {
+                return 0;
+            }
+            Object first = array.get(0);
+            if (first instanceof Number) {
+                return Math.max(0, ((Number) first).intValue());
+            }
+            if (first instanceof JSONObject) {
+                JSONObject object = (JSONObject) first;
+                if (object.has("get_available_credits")) {
+                    return Math.max(0, object.optInt("get_available_credits", 0));
+                }
+                JSONArray keys = object.names();
+                if (keys != null && keys.length() > 0) {
+                    String firstKey = keys.optString(0, "");
+                    if (!firstKey.isEmpty()) {
+                        return Math.max(0, object.optInt(firstKey, 0));
+                    }
+                }
+            }
+            return 0;
+        }
+
+        if (body.startsWith("{")) {
+            JSONObject object = new JSONObject(body);
+            if (object.has("get_available_credits")) {
+                return Math.max(0, object.optInt("get_available_credits", 0));
+            }
+            JSONArray keys = object.names();
+            if (keys != null && keys.length() > 0) {
+                String firstKey = keys.optString(0, "");
+                if (!firstKey.isEmpty()) {
+                    return Math.max(0, object.optInt(firstKey, 0));
+                }
+            }
+            return 0;
+        }
+
+        throw new JSONException("Unexpected RPC response format.");
+    }
+
     @NonNull
     private Request.Builder baseApiRequest(@NonNull String url) {
         return new Request.Builder()
@@ -271,7 +366,11 @@ public class SupabaseRepository {
     private void executeWithoutBody(@NonNull Request request) throws IOException {
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException(errorFrom(response));
+                String bodyText = readBodyText(response.body());
+                if (response.code() == 403 && bodyText.contains(CREDITS_EXHAUSTED_CODE)) {
+                    throw new CreditsExhaustedException(httpErrorText(response, bodyText));
+                }
+                throw new IOException(httpErrorText(response, bodyText));
             }
         }
     }
@@ -280,7 +379,8 @@ public class SupabaseRepository {
     private JSONObject executeForSingleObject(@NonNull Request request) throws IOException, JSONException {
         try (Response response = httpClient.newCall(request).execute()) {
             if (!response.isSuccessful()) {
-                throw new IOException(errorFrom(response));
+                String bodyText = readBodyText(response.body());
+                throw httpError(response, bodyText);
             }
 
             ResponseBody responseBody = response.body();
@@ -318,17 +418,46 @@ public class SupabaseRepository {
 
     @NonNull
     private String errorFrom(@NonNull Response response) {
-        String bodyText = "";
+        String bodyText;
         try {
-            ResponseBody body = response.body();
-            if (body != null) {
-                bodyText = body.string();
-            }
+            bodyText = readBodyText(response.body());
         } catch (IOException ignored) {
             bodyText = "";
         }
+        return httpErrorText(response, bodyText);
+    }
+
+    private IOException httpError(@NonNull Response response, @NonNull String bodyText) {
+        if (response.code() == 403 && bodyText.contains(CREDITS_EXHAUSTED_CODE)) {
+            return new CreditsExhaustedException(httpErrorText(response, bodyText));
+        }
+        return new IOException(httpErrorText(response, bodyText));
+    }
+
+    @NonNull
+    private String httpErrorText(@NonNull Response response, @NonNull String bodyText) {
         return "HTTP " + response.code() + " " + response.message()
                 + (bodyText.isEmpty() ? "" : (": " + new String(bodyText.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8)));
+    }
+
+    @NonNull
+    private String readBodyText(@Nullable ResponseBody body) throws IOException {
+        if (body == null) {
+            return "";
+        }
+        return body.string();
+    }
+
+    public static boolean isCreditsExhaustedError(@Nullable String message, @Nullable Throwable throwable) {
+        if (throwable instanceof CreditsExhaustedException) {
+            return true;
+        }
+        if (message != null && message.contains(CREDITS_EXHAUSTED_CODE)) {
+            return true;
+        }
+        return throwable != null
+                && throwable.getMessage() != null
+                && throwable.getMessage().contains(CREDITS_EXHAUSTED_CODE);
     }
 
     @NonNull
@@ -542,6 +671,12 @@ public class SupabaseRepository {
         void onSuccess(@Nullable T data);
 
         void onError(@NonNull String message, @Nullable Throwable throwable);
+    }
+
+    private static final class CreditsExhaustedException extends IOException {
+        CreditsExhaustedException(@NonNull String message) {
+            super(message);
+        }
     }
 }
 

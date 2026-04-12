@@ -67,6 +67,30 @@
             android:inputType="textCapSentences" />
     </com.google.android.material.textfield.TextInputLayout>
 
+    <TextView
+        android:id="@+id/available_scans_label"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/available_scans_loading"
+        android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/title_input_layout" />
+
+    <TextView
+        android:id="@+id/generation_limit_warning"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:text="@string/generation_limit_reached_message"
+        android:textColor="@android:color/holo_red_dark"
+        android:visibility="gone"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/available_scans_label" />
+
     <com.google.android.material.button.MaterialButton
         android:id="@+id/generate_model_button"
         style="@style/Widget.MaterialComponents.Button"
@@ -76,7 +100,7 @@
         android:text="@string/generate_model"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/title_input_layout" />
+        app:layout_constraintTop_toBottomOf="@id/generation_limit_warning" />
 
     <com.google.android.material.button.MaterialButton
         android:id="@+id/redo_recording_button"

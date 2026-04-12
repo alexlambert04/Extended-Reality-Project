@@ -72,6 +72,16 @@
                 android:textColor="@color/hint_positive"
                 android:textSize="13sp"
                 android:visibility="gone" />
+
+            <TextView
+                android:id="@+id/credits_warning_text"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="@string/generation_limit_reached_message"
+                android:textColor="#FFFFA8A8"
+                android:textSize="13sp"
+                android:visibility="gone" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
 

@@ -94,4 +94,10 @@
     <string name="marketplace_badge_cached">Cached</string>
     <string name="marketplace_badge_remote">Remote</string>
     <string name="marketplace_badge_downloading">Downloading</string>
+    <string name="available_scans_loading">Available Scans: loading...</string>
+    <string name="available_scans_value">Available Scans: %1$d</string>
+    <string name="available_scans_unknown">Available Scans: --</string>
+    <string name="available_scans_ready_hint">You can start a new scan.</string>
+    <string name="available_scans_fetch_failed">Could not refresh scan availability right now.</string>
+    <string name="generation_limit_reached_message">Generation limit reached. Please contact support or try again later.</string>
 </resources>

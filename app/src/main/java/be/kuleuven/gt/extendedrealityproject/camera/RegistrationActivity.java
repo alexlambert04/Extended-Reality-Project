@@ -22,6 +22,8 @@ public class RegistrationActivity extends AppCompatActivity {
     private ActivityRegistrationBinding binding;
     private String videoPath;
     private SupabaseRepository repository;
+    private boolean creditsExhausted;
+    private boolean loading;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -36,6 +38,7 @@ public class RegistrationActivity extends AppCompatActivity {
         }
 
         binding.videoPathValue.setText(buildRecordedFileText(videoPath));
+        refreshCreditsStatus();
 
         binding.redoRecordingButton.setOnClickListener(view -> {
             Intent redoIntent = new Intent(this, CameraCaptureActivity.class);
@@ -44,6 +47,11 @@ public class RegistrationActivity extends AppCompatActivity {
         });
 
         binding.generateModelButton.setOnClickListener(view -> {
+            if (creditsExhausted) {
+                Toast.makeText(this, R.string.generation_limit_reached_message, Toast.LENGTH_LONG).show();
+                return;
+            }
+
             String title = binding.titleInput.getText() == null
                     ? ""
                     : binding.titleInput.getText().toString().trim();
@@ -98,10 +106,22 @@ public class RegistrationActivity extends AppCompatActivity {
                 @Override
                 public void onError(String message, Throwable throwable) {
                     setLoading(false);
+                    if (SupabaseRepository.isCreditsExhaustedError(message, throwable)) {
+                        creditsExhausted = true;
+                        updateCreditsUi(0);
+                        Toast.makeText(RegistrationActivity.this, R.string.generation_limit_reached_message, Toast.LENGTH_LONG).show();
+                        return;
+                    }
                     Toast.makeText(RegistrationActivity.this, getString(R.string.generation_kickoff_failed) + " " + message, Toast.LENGTH_LONG).show();
                 }
             });
         });
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshCreditsStatus();
     }
 
     @Override
@@ -111,10 +131,45 @@ public class RegistrationActivity extends AppCompatActivity {
     }
 
     private void setLoading(boolean loading) {
-        binding.generateModelButton.setEnabled(!loading);
+        this.loading = loading;
+        binding.generateModelButton.setEnabled(!loading && !creditsExhausted);
         binding.redoRecordingButton.setEnabled(!loading);
         binding.titleInput.setEnabled(!loading);
         binding.generateModelButton.setVisibility(View.VISIBLE);
+    }
+
+    private void refreshCreditsStatus() {
+        if (!SupabaseRepository.isConfigured()) {
+            creditsExhausted = false;
+            updateCreditsUi(-1);
+            return;
+        }
+
+        repository.fetchAvailableScansAsync(new SupabaseRepository.RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer data) {
+                int count = data == null ? 0 : Math.max(0, data);
+                creditsExhausted = count <= 0;
+                updateCreditsUi(count);
+            }
+
+            @Override
+            public void onError(String message, Throwable throwable) {
+                creditsExhausted = false;
+                updateCreditsUi(-1);
+            }
+        });
+    }
+
+    private void updateCreditsUi(int count) {
+        if (count >= 0) {
+            binding.availableScansLabel.setText(getString(R.string.available_scans_value, count));
+        } else {
+            binding.availableScansLabel.setText(getString(R.string.available_scans_unknown));
+        }
+
+        binding.generationLimitWarning.setVisibility(creditsExhausted ? View.VISIBLE : View.GONE);
+        binding.generateModelButton.setEnabled(!loading && !creditsExhausted);
     }
 
     private String buildRecordedFileText(String path) {

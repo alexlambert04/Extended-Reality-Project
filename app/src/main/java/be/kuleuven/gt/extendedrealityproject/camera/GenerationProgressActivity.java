@@ -146,7 +146,11 @@ public class GenerationProgressActivity extends AppCompatActivity {
 
             @Override
             public void onError(String message, Throwable throwable) {
-                Toast.makeText(GenerationProgressActivity.this, R.string.generation_retry_failed, Toast.LENGTH_SHORT).show();
+                if (SupabaseRepository.isCreditsExhaustedError(message, throwable)) {
+                    Toast.makeText(GenerationProgressActivity.this, R.string.generation_limit_reached_message, Toast.LENGTH_LONG).show();
+                } else {
+                    Toast.makeText(GenerationProgressActivity.this, R.string.generation_retry_failed, Toast.LENGTH_SHORT).show();
+                }
                 appendInfo("Retry error: " + message);
             }
         });

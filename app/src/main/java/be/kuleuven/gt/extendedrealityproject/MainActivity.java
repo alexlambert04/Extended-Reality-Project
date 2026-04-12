@@ -4,6 +4,7 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
@@ -11,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import be.kuleuven.gt.extendedrealityproject.camera.CameraCaptureActivity;
 import be.kuleuven.gt.extendedrealityproject.camera.LocalModelsActivity;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityMainBinding;
+import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
@@ -18,6 +20,7 @@ public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
     private final NativeBridge nativeBridge = new NativeBridge();
+    private SupabaseRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -27,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(binding.getRoot());
 
         nativeBridge.initializeRuntime();
+        repository = new SupabaseRepository(this);
 
         TextView nativeStatus = binding.nativeStatus;
         nativeStatus.setText(nativeBridge.getRuntimeStatus());
@@ -64,6 +68,51 @@ public class MainActivity extends AppCompatActivity {
         binding.stopTrainingButton.setOnClickListener(view -> {
             nativeBridge.stopTraining();
             nativeStatus.setText(nativeBridge.getRuntimeStatus());
+        });
+
+        refreshAvailableScans();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshAvailableScans();
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        if (repository != null) {
+            repository.shutdown();
+        }
+    }
+
+    private void refreshAvailableScans() {
+        if (!SupabaseRepository.isConfigured()) {
+            binding.availableScansValue.setText(getString(R.string.available_scans_unknown));
+            return;
+        }
+
+        repository.fetchAvailableScansAsync(new SupabaseRepository.RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer data) {
+                int count = data == null ? 0 : Math.max(0, data);
+                binding.availableScansValue.setText(getString(R.string.available_scans_value, count));
+                boolean canRecord = count > 0;
+                binding.openCameraButton.setEnabled(canRecord);
+                binding.scanAvailabilityHint.setText(canRecord
+                        ? R.string.available_scans_ready_hint
+                        : R.string.generation_limit_reached_message);
+            }
+
+            @Override
+            public void onError(String message, Throwable throwable) {
+                binding.availableScansValue.setText(getString(R.string.available_scans_unknown));
+                binding.scanAvailabilityHint.setText(R.string.available_scans_fetch_failed);
+                if (BuildConfig.DEBUG) {
+                    Toast.makeText(MainActivity.this, "Credits fetch failed: " + message, Toast.LENGTH_LONG).show();
+                }
+            }
         });
     }
 

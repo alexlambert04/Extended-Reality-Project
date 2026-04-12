@@ -36,6 +36,7 @@ import java.util.concurrent.ExecutionException;
 
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityCameraCaptureBinding;
+import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
 public class CameraCaptureActivity extends AppCompatActivity {
 
@@ -69,12 +70,15 @@ public class CameraCaptureActivity extends AppCompatActivity {
     private ActivityResultLauncher<String> requestCameraPermissionLauncher;
     private int recommendationColorDefault;
     private int recommendationColorWarning;
+    private SupabaseRepository repository;
+    private boolean creditsExhausted;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         binding = ActivityCameraCaptureBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
+        repository = new SupabaseRepository(this);
 
         recommendationColorDefault = ContextCompat.getColor(this, R.color.hint_positive);
         recommendationColorWarning = ContextCompat.getColor(this, R.color.hint_warning);
@@ -98,6 +102,10 @@ public class CameraCaptureActivity extends AppCompatActivity {
         );
 
         binding.recordButton.setOnClickListener(view -> {
+            if (creditsExhausted) {
+                Toast.makeText(this, R.string.generation_limit_reached_message, Toast.LENGTH_LONG).show();
+                return;
+            }
             if (activeRecording == null) {
                 startRecording();
             } else {
@@ -110,6 +118,14 @@ public class CameraCaptureActivity extends AppCompatActivity {
         } else {
             requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
         }
+
+        refreshCreditsGate();
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refreshCreditsGate();
     }
 
     @Override
@@ -128,6 +144,37 @@ public class CameraCaptureActivity extends AppCompatActivity {
             activeRecording.close();
             activeRecording = null;
         }
+        if (repository != null) {
+            repository.shutdown();
+        }
+    }
+
+    private void refreshCreditsGate() {
+        if (!SupabaseRepository.isConfigured()) {
+            applyCreditsState(false);
+            return;
+        }
+
+        repository.fetchAvailableScansAsync(new SupabaseRepository.RepositoryCallback<Integer>() {
+            @Override
+            public void onSuccess(Integer data) {
+                int remaining = data == null ? 0 : Math.max(0, data);
+                applyCreditsState(remaining <= 0);
+            }
+
+            @Override
+            public void onError(String message, Throwable throwable) {
+                // Keep capture available when credit status cannot be fetched.
+                applyCreditsState(false);
+            }
+        });
+    }
+
+    private void applyCreditsState(boolean exhausted) {
+        creditsExhausted = exhausted;
+        boolean canRecord = !exhausted && activeRecording == null;
+        binding.recordButton.setEnabled(canRecord || activeRecording != null);
+        binding.creditsWarningText.setVisibility(exhausted ? View.VISIBLE : View.GONE);
     }
 
     private boolean hasCameraPermission() {
