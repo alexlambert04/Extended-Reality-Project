@@ -1,0 +1,25 @@
+yo
+
+heb een paar dagen aan XR project gewerkt, om is te zien wat dat er allemaal (niet) mogelijk is met de Gaussian Splatting op een Android toestel.
+Zoals ik het interpreteerde uit de verschillende markdown files op de main branch, was het de bedoeling om alles op het toestel zelf te runnen (scannen, model processing en dan rendering). Bij het implementeren dervan heb ik besloten om het toch anders aan te pakken:
+1) implementeren van een volledig lokaal Gaussian Splatting algoritme zou quasi van scratch geschreven moeten worden in cpp, geen voorbeelden/libraries kunnen vinden daarvoor, best wel logisch aangezien dat een gemiddeld telefoon gwn weg niet de kracht heeft om zo'n algoritme te runnen. Dus volledig lokaal valt hiermee al over boord...
+tenzij dat we echt een quasi thesis willen maken om het toch maar aan de praat te krijgen op een stuk zwakker toestel (niet aan te raden)
+2) als je dan online kijkt hoe dat die GS processing gedaan word vind je al rap dat ze gebruik maken van Nvidia CUDA GPUs, heel krachtige machines dus.
+dus wat zijn de opties dan?
+ - we huren zo'n krachtige machine in de cloud, en implementeren daarop een GS algoritme, en hosten dan een API service daarop die onze app dan kan callen.
+ - als er iemand een krachtige gaming laptop heeft, zou dat een cloud subscription kunnen besparen en kunnen we alles daarop runnen (minder praktisch wel qua beschikbaarheid)
+ - we besteden de GS processing uit aan een cloud service, die wij adhv een api endpoint kunnen aanspreken en onze foto's of videos naar kunnen uploaden
+en zij geven ons dan een render-baar model terug (.ply formaat)
+
+Ik ben dan uiteindelijk voor de laatste optie gegaan, waarbij dat ik gebruik maak van de Kiri Engine API.
+Kiri heeft een goede documentatie en bied 20 gratis processings aan (dus 20 verschillende Gaussian Splattings) per account.
+Daarboven op vallen alle API calls naar Kiri te implementeren in Supabase via edge functions en hebben we dus ook helemaal geen eigen server nodig, supabase host het voor ons.
+High-level is de flow dan als volgt:
+1) app maakt video en geeft die video door aan de supabase database
+2) supabase maakt dan een api request naar de Kiri Engine servers en vraagt om de video om te zetten naar een 3d model
+3) Kiri antwoord met het 3d model en supabase download dat model
+4) app download het model dan weer van supabase in de cache van het device
+5) app rendert het gedownloade model
+
+Dit is zowa kort uitgelegd wat dak geïmplementeerd/werkende heb gekregen...
+op mijn github branch 
