@@ -45,6 +45,10 @@
             android:name=".camera.LocalModelsActivity"
             android:exported="false"
             android:theme="@style/Theme.ExtendedRealityProject" />
+        <activity
+            android:name=".ar.ArViewerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ExtendedRealityProject" />
 
         <activity
             android:name=".MainActivity"

@@ -25,6 +25,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import be.kuleuven.gt.extendedrealityproject.R;
+import be.kuleuven.gt.extendedrealityproject.ar.ArViewerContract;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityLocalModelsBinding;
 import be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord;
 import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
@@ -189,9 +190,12 @@ public class LocalModelsActivity extends AppCompatActivity {
             return;
         }
 
-        Intent intent = new Intent(this, ModelViewerActivity.class);
-        intent.putExtra(ModelViewerActivity.EXTRA_MODEL_PATH, item.localPlyFile.getAbsolutePath());
-        intent.putExtra(ModelViewerActivity.EXTRA_MODEL_TITLE, item.title);
+        Intent intent = ArViewerContract.createIntent(
+                this,
+                android.net.Uri.fromFile(item.localPlyFile),
+                item.localPlyFile.getAbsolutePath(),
+                item.title
+        );
         startActivity(intent);
     }
 

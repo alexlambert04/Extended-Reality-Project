@@ -9,6 +9,12 @@ import android.widget.Toast;
 import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+
+import be.kuleuven.gt.extendedrealityproject.ar.ArViewerContract;
 import be.kuleuven.gt.extendedrealityproject.camera.CameraCaptureActivity;
 import be.kuleuven.gt.extendedrealityproject.camera.LocalModelsActivity;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityMainBinding;
@@ -17,6 +23,8 @@ import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class MainActivity extends AppCompatActivity {
+
+    private static final String QUICK_AR_ASSET_PATH = "models/quickstart_demo.glb";
 
     private ActivityMainBinding binding;
     private final NativeBridge nativeBridge = new NativeBridge();
@@ -42,6 +50,8 @@ public class MainActivity extends AppCompatActivity {
         binding.openLocalModelsButton.setOnClickListener(view ->
                 startActivity(new Intent(this, LocalModelsActivity.class))
         );
+
+        binding.openQuickArButton.setOnClickListener(view -> openBundledArDemo());
 
         binding.openCameraInfoButton.setOnClickListener(view ->
                 showFeatureInfoDialog(R.string.main_record_info_title, R.string.main_record_info_message)
@@ -130,5 +140,47 @@ public class MainActivity extends AppCompatActivity {
         });
 
         dialog.show();
+    }
+
+    private void openBundledArDemo() {
+        try {
+            File source = ensureBundledDemoInCache();
+            Intent intent = ArViewerContract.createIntent(
+                    this,
+                    android.net.Uri.fromFile(source),
+                    source.getAbsolutePath(),
+                    getString(R.string.main_quick_ar_button)
+            );
+            startActivity(intent);
+        } catch (IOException exception) {
+            Toast.makeText(this, R.string.main_quick_ar_missing_asset, Toast.LENGTH_LONG).show();
+        }
+    }
+
+    private File ensureBundledDemoInCache() throws IOException {
+        File cacheDir = new File(getCacheDir(), "ar-demo");
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            throw new IOException("Could not create AR demo cache directory");
+        }
+
+        File outFile = new File(cacheDir, "quickstart_demo.glb");
+        if (outFile.exists() && outFile.length() > 0) {
+            return outFile;
+        }
+
+        try (InputStream in = getAssets().open(QUICK_AR_ASSET_PATH);
+             FileOutputStream out = new FileOutputStream(outFile, false)) {
+            byte[] buffer = new byte[8192];
+            int read;
+            while ((read = in.read(buffer)) != -1) {
+                out.write(buffer, 0, read);
+            }
+            out.getFD().sync();
+        }
+
+        if (!outFile.exists() || outFile.length() == 0) {
+            throw new IOException("AR demo file is empty");
+        }
+        return outFile;
     }
 }

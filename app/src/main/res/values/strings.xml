@@ -53,6 +53,9 @@
     <string name="viewer_title">3D Model Viewer</string>
     <string name="viewer_title_with_name">3D Model Viewer - %1$s</string>
     <string name="viewer_missing_model">Model file is missing on this device.</string>
+    <string name="viewer_ar_unavailable">AR is not available on this device or emulator.</string>
+    <string name="viewer_missing_model_source">No model source was provided to the AR viewer.</string>
+    <string name="viewer_model_load_failed">Could not load the GLB model for AR viewing.</string>
     <string name="viewer_loading_debug">Loading local file: %1$s</string>
     <string name="viewer_web_error">Viewer web error: %1$s</string>
     <string name="viewer_debug_panel_title">Viewer debug output</string>
@@ -81,6 +84,10 @@
     <string name="main_record_info_message">Record Object opens the camera capture flow where you create a scan video. After recording, you can title it and send it for model generation.</string>
     <string name="main_local_models_info_title">About Marketplace Gallery</string>
     <string name="main_local_models_info_message">Marketplace Gallery shows READY 3D models from Supabase. Each card lets you download to device cache or open immediately if already cached.</string>
+    <string name="main_quick_ar_title">Quick AR Test</string>
+    <string name="main_quick_ar_hint">Launch AR with a bundled local GLB for fast testing.</string>
+    <string name="main_quick_ar_button">Open AR Test Model</string>
+    <string name="main_quick_ar_missing_asset">Missing quick AR model. Put quickstart_demo.glb in app/src/main/assets/models/ and rebuild.</string>
     <string name="info_dialog_close">Close</string>
     <string name="marketplace_download">Download</string>
     <string name="marketplace_downloading">Downloading...</string>

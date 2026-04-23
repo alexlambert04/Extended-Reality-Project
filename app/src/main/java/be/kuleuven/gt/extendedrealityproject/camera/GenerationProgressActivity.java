@@ -17,6 +17,7 @@ import java.util.Locale;
 
 import be.kuleuven.gt.extendedrealityproject.MainActivity;
 import be.kuleuven.gt.extendedrealityproject.R;
+import be.kuleuven.gt.extendedrealityproject.ar.ArViewerContract;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityGenerationProgressBinding;
 import be.kuleuven.gt.extendedrealityproject.supabase.GenerationSessionStore;
 import be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord;
@@ -211,9 +212,12 @@ public class GenerationProgressActivity extends AppCompatActivity {
                     return;
                 }
                 appendInfo(getString(R.string.model_ready_local, data.getAbsolutePath()));
-                Intent intent = new Intent(GenerationProgressActivity.this, ModelViewerActivity.class);
-                intent.putExtra(ModelViewerActivity.EXTRA_MODEL_PATH, data.getAbsolutePath());
-                intent.putExtra(ModelViewerActivity.EXTRA_MODEL_TITLE, title);
+                Intent intent = ArViewerContract.createIntent(
+                        GenerationProgressActivity.this,
+                        android.net.Uri.fromFile(data),
+                        data.getAbsolutePath(),
+                        title
+                );
                 startActivity(intent);
             }
 
