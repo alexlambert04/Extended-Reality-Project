@@ -1,21 +1,40 @@
 package be.kuleuven.gt.extendedrealityproject.ui;
 
+import java.util.List;
+
 public class MarketplaceItem {
 
     private final String itemId;
     private final String title;
+    private final double price;
+    private final String description;
+    private final String sellerName;
+    private final String location;
+    private final String category;
+    private final String modelUrl;
+    private final List<Integer> imageResIds; // drawable resource ids for dummy data
 
-    public MarketplaceItem(String itemId, String title) {
+    public MarketplaceItem(String itemId, String title, double price, String description,
+                           String sellerName, String location, String category,
+                           String modelUrl, List<Integer> imageResIds) {
         this.itemId = itemId;
         this.title = title;
+        this.price = price;
+        this.description = description;
+        this.sellerName = sellerName;
+        this.location = location;
+        this.category = category;
+        this.modelUrl = modelUrl;
+        this.imageResIds = imageResIds;
     }
 
-    public String getItemId() {
-        return itemId;
-    }
-
-    public String getTitle() {
-        return title;
-    }
+    public String getItemId() { return itemId; }
+    public String getTitle() { return title; }
+    public double getPrice() { return price; }
+    public String getDescription() { return description; }
+    public String getSellerName() { return sellerName; }
+    public String getLocation() { return location; }
+    public String getCategory() { return category; }
+    public String getModelUrl() { return modelUrl; }
+    public List<Integer> getImageResIds() { return imageResIds; }
 }
-

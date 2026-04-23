@@ -1,26 +1,17 @@
 package be.kuleuven.gt.extendedrealityproject;
 
-import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
-import android.widget.TextView;
-import android.widget.Toast;
 
-import androidx.annotation.StringRes;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
-import be.kuleuven.gt.extendedrealityproject.camera.CameraCaptureActivity;
-import be.kuleuven.gt.extendedrealityproject.camera.LocalModelsActivity;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityMainBinding;
-import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
-
-import com.google.android.material.dialog.MaterialAlertDialogBuilder;
+import be.kuleuven.gt.extendedrealityproject.ui.browse.BrowseFragment;
+import be.kuleuven.gt.extendedrealityproject.ui.sell.SellFragment;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
-    private final NativeBridge nativeBridge = new NativeBridge();
-    private SupabaseRepository repository;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -29,106 +20,28 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        nativeBridge.initializeRuntime();
-        repository = new SupabaseRepository(this);
-
-        TextView nativeStatus = binding.nativeStatus;
-        nativeStatus.setText(nativeBridge.getRuntimeStatus());
-
-        binding.openCameraButton.setOnClickListener(view ->
-                startActivity(new Intent(this, CameraCaptureActivity.class))
-        );
-
-        binding.openLocalModelsButton.setOnClickListener(view ->
-                startActivity(new Intent(this, LocalModelsActivity.class))
-        );
-
-        binding.openCameraInfoButton.setOnClickListener(view ->
-                showFeatureInfoDialog(R.string.main_record_info_title, R.string.main_record_info_message)
-        );
-
-        binding.openLocalModelsInfoButton.setOnClickListener(view ->
-                showFeatureInfoDialog(R.string.main_local_models_info_title, R.string.main_local_models_info_message)
-        );
-
-        binding.capturePoseButton.setOnClickListener(view -> {
-            float[] dummyPose = new float[16];
-            dummyPose[0] = 1.0f;
-            dummyPose[5] = 1.0f;
-            dummyPose[10] = 1.0f;
-            dummyPose[15] = 1.0f;
-            nativeBridge.submitCameraPose(dummyPose);
-        });
-
-        binding.startTrainingButton.setOnClickListener(view -> {
-            nativeBridge.startTraining("demo-item-001");
-            nativeStatus.setText(nativeBridge.getRuntimeStatus());
-        });
-
-        binding.stopTrainingButton.setOnClickListener(view -> {
-            nativeBridge.stopTraining();
-            nativeStatus.setText(nativeBridge.getRuntimeStatus());
-        });
-
-        refreshAvailableScans();
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        refreshAvailableScans();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (repository != null) {
-            repository.shutdown();
-        }
-    }
-
-    private void refreshAvailableScans() {
-        if (!SupabaseRepository.isConfigured()) {
-            binding.availableScansValue.setText(getString(R.string.available_scans_unknown));
-            return;
+        // Default tab
+        if (savedInstanceState == null) {
+            loadFragment(new BrowseFragment());
         }
 
-        repository.fetchAvailableScansAsync(new SupabaseRepository.RepositoryCallback<Integer>() {
-            @Override
-            public void onSuccess(Integer data) {
-                int count = data == null ? 0 : Math.max(0, data);
-                binding.availableScansValue.setText(getString(R.string.available_scans_value, count));
-                boolean canRecord = count > 0;
-                binding.openCameraButton.setEnabled(canRecord);
-                binding.scanAvailabilityHint.setText(canRecord
-                        ? R.string.available_scans_ready_hint
-                        : R.string.generation_limit_reached_message);
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_browse) {
+                loadFragment(new BrowseFragment());
+                return true;
+            } else if (id == R.id.nav_sell) {
+                loadFragment(new SellFragment());
+                return true;
             }
-
-            @Override
-            public void onError(String message, Throwable throwable) {
-                binding.availableScansValue.setText(getString(R.string.available_scans_unknown));
-                binding.scanAvailabilityHint.setText(R.string.available_scans_fetch_failed);
-                if (BuildConfig.DEBUG) {
-                    Toast.makeText(MainActivity.this, "Credits fetch failed: " + message, Toast.LENGTH_LONG).show();
-                }
-            }
+            return false;
         });
     }
 
-    private void showFeatureInfoDialog(@StringRes int titleRes, @StringRes int messageRes) {
-        androidx.appcompat.app.AlertDialog dialog = new MaterialAlertDialogBuilder(this)
-                .setTitle(titleRes)
-                .setMessage(messageRes)
-                .setPositiveButton(R.string.info_dialog_close, null)
-                .create();
-
-        dialog.setOnShowListener(d -> {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && dialog.getWindow() != null) {
-                dialog.getWindow().setBackgroundBlurRadius(28);
-            }
-        });
-
-        dialog.show();
+    private void loadFragment(Fragment fragment) {
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit();
     }
 }

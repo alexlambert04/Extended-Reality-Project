@@ -4,4 +4,15 @@
     <color name="white">#FFFFFFFF</color>
     <color name="hint_positive">#99CC00</color>
     <color name="hint_warning">#FFB300</color>
+    <color name="colorPrimary">#3B82F6</color>
+    <color name="colorPrimaryVariant">#2563EB</color>
+    <color name="colorOnPrimary">#FFFFFF</color>
+    <color name="colorSecondary">#10B981</color>
+    <color name="colorBackground">#F8FAFC</color>
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorOnSurface">#0F172A</color>
+    <color name="colorOnSurfaceVariant">#64748B</color>
+    <color name="colorHeroBg">#EFF6FF</color>
+    <color name="colorHeroAccent">#3B82F6</color>
+    <color name="colorCardBorder">#E2E8F0</color>
 </resources>
