@@ -21,6 +21,14 @@ import java.util.Locale;
 
 public class ItemCardAdapter extends RecyclerView.Adapter<ItemCardAdapter.ViewHolder> {
 
+    private static final String EXTRA_ITEM_TITLE = "extra_item_title";
+    private static final String EXTRA_ITEM_PRICE = "extra_item_price";
+    private static final String EXTRA_ITEM_DESCRIPTION = "extra_item_description";
+    private static final String EXTRA_ITEM_SELLER = "extra_item_seller";
+    private static final String EXTRA_ITEM_LOCATION = "extra_item_location";
+    private static final String EXTRA_ITEM_CATEGORY = "extra_item_category";
+    private static final String EXTRA_ITEM_MODEL_URL = "extra_item_model_url";
+
     private final List<MarketplaceItem> items = new ArrayList<>();
 
     public void setItems(List<MarketplaceItem> newItems) {
@@ -85,6 +93,13 @@ public class ItemCardAdapter extends RecyclerView.Adapter<ItemCardAdapter.ViewHo
                 Context ctx = v.getContext();
                 Intent intent = new Intent(ctx, ItemDetailActivity.class);
                 intent.putExtra(ItemDetailActivity.EXTRA_ITEM_ID, item.getItemId());
+                intent.putExtra(EXTRA_ITEM_TITLE, item.getTitle());
+                intent.putExtra(EXTRA_ITEM_PRICE, item.getPrice());
+                intent.putExtra(EXTRA_ITEM_DESCRIPTION, item.getDescription());
+                intent.putExtra(EXTRA_ITEM_SELLER, item.getSellerName());
+                intent.putExtra(EXTRA_ITEM_LOCATION, item.getLocation());
+                intent.putExtra(EXTRA_ITEM_CATEGORY, item.getCategory());
+                intent.putExtra(EXTRA_ITEM_MODEL_URL, item.getModelUrl());
                 ctx.startActivity(intent);
             });
         }
