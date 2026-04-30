@@ -24,7 +24,7 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 
 public class MainActivity extends AppCompatActivity {
 
-    private static final String QUICK_AR_ASSET_PATH = "models/quickstart_demo.glb";
+    private static final String QUICK_AR_ASSET_PATH = "models/bottle.glb";
 
     private ActivityMainBinding binding;
     private final NativeBridge nativeBridge = new NativeBridge();
@@ -163,7 +163,7 @@ public class MainActivity extends AppCompatActivity {
             throw new IOException("Could not create AR demo cache directory");
         }
 
-        File outFile = new File(cacheDir, "quickstart_demo.glb");
+        File outFile = new File(cacheDir, "bottle.glb");
         if (outFile.exists() && outFile.length() > 0) {
             return outFile;
         }

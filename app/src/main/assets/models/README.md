@@ -1,8 +1,6 @@
 # Quick AR demo asset
 
-Place your test model here with this exact name:
-
-- `quickstart_demo.glb`
+The model name is defined in the main activity on line 27 & 166 and 
 
 The `MainActivity` quick AR button copies this asset into app cache and launches `ArViewerActivity`.
 
