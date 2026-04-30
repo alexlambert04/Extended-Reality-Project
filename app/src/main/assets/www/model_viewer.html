@@ -11,7 +11,7 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #101010;
+      background: #f4f4f5;
       color: #f0f0f0;
       font-family: Arial, sans-serif;
     }
@@ -30,6 +30,7 @@
       display: block;
       width: 100%;
       height: 100%;
+      background: #f4f4f5;
     }
   </style>
 </head>
@@ -123,6 +124,9 @@
       const scene = new SPLAT.Scene();
       const camera = new SPLAT.Camera();
       const renderer = new SPLAT.WebGLRenderer();
+      if (SPLAT.Color32) {
+          renderer.backgroundColor = new SPLAT.Color32(244, 244, 245, 255);
+      }
       renderer.setSize(window.innerWidth, window.innerHeight);
       document.body.appendChild(renderer.canvas);
 

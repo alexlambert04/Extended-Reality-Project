@@ -532,7 +532,11 @@ public class SupabaseRepository {
 
         File zipFile = new File(outputDir, "model.zip");
         try {
+            Log.d(TAG, "Downloading model zip: itemId=" + itemId + " url=" + modelUrl + " -> " + zipFile.getAbsolutePath());
             downloadToFile(modelUrl, zipFile);
+            if (!zipFile.exists() || zipFile.length() == 0) {
+                throw new IOException("Downloaded model.zip is missing or empty: " + zipFile.getAbsolutePath());
+            }
 
             File modelFile = extractPreferredModel(zipFile, outputDir);
             if (modelFile == null) {
@@ -546,7 +550,6 @@ public class SupabaseRepository {
         }
     }
 
-    @NonNull
     private File downloadAndExtractPly(@NonNull String itemId, @NonNull String modelUrl) throws IOException {
         if (modelUrl.trim().isEmpty()) {
             throw new IOException("Model URL is empty.");
@@ -559,7 +562,11 @@ public class SupabaseRepository {
 
         File zipFile = new File(outputDir, "model.zip");
         try {
+            Log.d(TAG, "Downloading model zip (ply): itemId=" + itemId + " url=" + modelUrl + " -> " + zipFile.getAbsolutePath());
             downloadToFile(modelUrl, zipFile);
+            if (!zipFile.exists() || zipFile.length() == 0) {
+                throw new IOException("Downloaded model.zip is missing or empty: " + zipFile.getAbsolutePath());
+            }
 
             File modelFile = extractPly(zipFile, outputDir);
             if (modelFile == null) {
@@ -574,6 +581,11 @@ public class SupabaseRepository {
     }
 
     private void downloadToFile(@NonNull String url, @NonNull File outputFile) throws IOException {
+        File parent = outputFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IOException("Could not create download directory: " + parent.getAbsolutePath());
+        }
+
         Request request = new Request.Builder()
                 .url(url)
                 .addHeader("Accept", "application/octet-stream")
@@ -598,6 +610,9 @@ public class SupabaseRepository {
                 }
                 fileOutputStream.flush();
             }
+        } catch (IOException exception) {
+            Log.e(TAG, "Model download failed: url=" + url + " file=" + outputFile.getAbsolutePath(), exception);
+            throw exception;
         }
     }
 

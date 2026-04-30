@@ -82,6 +82,42 @@
             android:text="@string/detail_tab_ar" />
     </com.google.android.material.tabs.TabLayout>
 
+    <!-- 3D model container (hidden unless 3D tab is active) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/detail_model_container"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="2dp"
+        app:strokeColor="@color/colorPrimary">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <WebView
+                android:id="@+id/detail_model_webview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/colorSurface" />
+
+            <ProgressBar
+                android:id="@+id/detail_model_loading"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
+
     <!-- Image pager area -->
     <ImageView
         android:id="@+id/detail_image"
@@ -93,6 +129,7 @@
 
     <!-- Scrollable detail content -->
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/detail_scroll_content"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
