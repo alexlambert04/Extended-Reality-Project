@@ -404,16 +404,44 @@ public class SupabaseRepository {
         String id = object.optString("id", "");
         String title = object.optString("title", "");
         String statusText = object.optString("status", PipelineStatus.UNKNOWN.name());
+        String usedApiKeyId = nullIfBlank(object.optString("used_api_key_id", ""));
+        String sellerName = nullIfBlank(object.optString("seller_name", ""));
+        String location = nullIfBlank(object.optString("location", ""));
+        String category = nullIfBlank(object.optString("category", ""));
+        String description = nullIfBlank(object.optString("description", ""));
+        Double price = nullableDouble(object, "price");
 
         return new MarketplaceItemRecord(
                 id,
                 title,
                 PipelineStatus.from(statusText),
-                object.optString("file_path", ""),
-                object.optString("kiri_serialize", ""),
-                object.optString("model_url", ""),
-                object.optString("created_at", "")
+                nullIfBlank(object.optString("file_path", "")),
+                nullIfBlank(object.optString("kiri_serialize", "")),
+                nullIfBlank(object.optString("model_url", "")),
+                nullIfBlank(object.optString("created_at", "")),
+                usedApiKeyId,
+                sellerName,
+                location,
+                category,
+                description,
+                price
         );
+    }
+
+    @Nullable
+    private String nullIfBlank(@Nullable String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    @Nullable
+    private Double nullableDouble(@NonNull JSONObject object, @NonNull String key) {
+        if (!object.has(key) || object.isNull(key)) {
+            return null;
+        }
+        return object.optDouble(key);
     }
 
     @NonNull
@@ -678,5 +706,54 @@ public class SupabaseRepository {
             super(message);
         }
     }
-}
 
+    public void updateMarketplaceItemDetailsAsync(
+            @NonNull String itemId,
+            @Nullable String title,
+            @Nullable String sellerName,
+            @Nullable String location,
+            @Nullable String category,
+            @Nullable String description,
+            @Nullable Double price,
+            @NonNull RepositoryCallback<Void> callback
+    ) {
+        executor.execute(() -> {
+            try {
+                updateMarketplaceItemDetails(itemId, title, sellerName, location, category, description, price);
+                postSuccess(callback, null);
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
+    private void updateMarketplaceItemDetails(
+            @NonNull String itemId,
+            @Nullable String title,
+            @Nullable String sellerName,
+            @Nullable String location,
+            @Nullable String category,
+            @Nullable String description,
+            @Nullable Double price
+    ) throws IOException, JSONException {
+        JSONObject body = new JSONObject();
+        putOptional(body, "title", title);
+        putOptional(body, "seller_name", sellerName);
+        putOptional(body, "location", location);
+        putOptional(body, "category", category);
+        putOptional(body, "description", description);
+        body.put("price", price == null ? JSONObject.NULL : price);
+
+        Request request = baseApiRequest(baseUrl + "/rest/v1/MarketplaceItems?id=eq." + itemId)
+                .addHeader("Prefer", "return=minimal")
+                .method("PATCH", RequestBody.create(body.toString(), JSON_MEDIA))
+                .build();
+
+        executeWithoutBody(request);
+    }
+
+    private void putOptional(@NonNull JSONObject body, @NonNull String key, @Nullable String value) throws JSONException {
+        String trimmed = value == null ? null : value.trim();
+        body.put(key, trimmed == null || trimmed.isEmpty() ? JSONObject.NULL : trimmed);
+    }
+}

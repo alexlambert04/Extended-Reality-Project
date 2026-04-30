@@ -63,11 +63,16 @@ public class ItemDetailActivity extends AppCompatActivity {
         // Fields
         ((TextView) findViewById(R.id.detail_title)).setText(resolvedItem.getTitle());
 
-        double p = resolvedItem.getPrice();
-        String priceStr = (p == Math.floor(p))
-                ? String.format(Locale.getDefault(), "€%d", (int) p)
-                : String.format(Locale.getDefault(), "€%.2f", p);
-        ((TextView) findViewById(R.id.detail_price)).setText(priceStr);
+        Double priceValue = resolvedItem.getPrice();
+        if (priceValue == null) {
+            ((TextView) findViewById(R.id.detail_price)).setText("N/A");
+        } else {
+            double p = priceValue;
+            String priceStr = (p == Math.floor(p))
+                    ? String.format(Locale.getDefault(), "€%d", (int) p)
+                    : String.format(Locale.getDefault(), "€%.2f", p);
+            ((TextView) findViewById(R.id.detail_price)).setText(priceStr);
+        }
 
         ((TextView) findViewById(R.id.detail_description)).setText(resolvedItem.getDescription());
         ((TextView) findViewById(R.id.detail_location)).setText("📍 " + resolvedItem.getLocation());
@@ -144,10 +149,15 @@ public class ItemDetailActivity extends AppCompatActivity {
             return null;
         }
 
+        Double price = null;
+        if (intent.hasExtra(EXTRA_ITEM_PRICE)) {
+            price = intent.getDoubleExtra(EXTRA_ITEM_PRICE, 0.0);
+        }
+
         return new MarketplaceItem(
                 itemId,
                 title,
-                intent.getDoubleExtra(EXTRA_ITEM_PRICE, 0.0),
+                price,
                 fallback(intent.getStringExtra(EXTRA_ITEM_DESCRIPTION), "No description available."),
                 fallback(intent.getStringExtra(EXTRA_ITEM_SELLER), "Marketplace Seller"),
                 fallback(intent.getStringExtra(EXTRA_ITEM_LOCATION), "Unknown location"),

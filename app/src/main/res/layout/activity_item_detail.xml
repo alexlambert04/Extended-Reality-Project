@@ -125,7 +125,7 @@
                 android:textColor="@color/colorOnSurface"
                 android:text="Item Title" />
 
-            <!-- Location / time / views row -->
+            <!-- Location row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -140,23 +140,6 @@
                     android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                     android:textColor="@color/colorOnSurfaceVariant"
                     android:text="📍 Location" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                    android:textColor="@color/colorOnSurfaceVariant"
-                    android:text="🕐 2 days ago" />
-
-                <TextView
-                    android:id="@+id/detail_views"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                    android:textColor="@color/colorOnSurfaceVariant"
-                    android:text="👁 142" />
             </LinearLayout>
 
             <!-- Price -->

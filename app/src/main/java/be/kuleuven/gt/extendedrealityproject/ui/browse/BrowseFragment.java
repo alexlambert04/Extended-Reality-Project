@@ -139,11 +139,12 @@ public class BrowseFragment extends Fragment {
         for (MarketplaceItemRecord record : records) {
             String itemId = record.getId();
             String title = safeText(record.getTitle(), itemId);
-            String category = "Other";
-            String seller = mockSellerName(itemId);
-            String location = "Belgium";
-            String description = "3D model generated from Supabase pipeline. Additional listing details are mocked for now.";
-            double price = mockPrice(itemId);
+            String category = safeText(record.getCategory(), "Other");
+            String seller = safeText(record.getSellerName(), mockSellerName(itemId));
+            String location = safeText(record.getLocation(), "Belgium");
+            String description = safeText(record.getDescription(),
+                    "3D model generated from Supabase pipeline. Additional listing details are mocked for now.");
+            Double price = record.getPrice();
             String modelUrl = nullIfBlank(record.getModelUrl());
 
             mapped.add(new MarketplaceItem(

@@ -6,7 +6,7 @@ public class MarketplaceItem {
 
     private final String itemId;
     private final String title;
-    private final double price;
+    private final Double price;
     private final String description;
     private final String sellerName;
     private final String location;
@@ -14,7 +14,7 @@ public class MarketplaceItem {
     private final String modelUrl;
     private final List<Integer> imageResIds; // drawable resource ids for dummy data
 
-    public MarketplaceItem(String itemId, String title, double price, String description,
+    public MarketplaceItem(String itemId, String title, Double price, String description,
                            String sellerName, String location, String category,
                            String modelUrl, List<Integer> imageResIds) {
         this.itemId = itemId;
@@ -30,7 +30,7 @@ public class MarketplaceItem {
 
     public String getItemId() { return itemId; }
     public String getTitle() { return title; }
-    public double getPrice() { return price; }
+    public Double getPrice() { return price; }
     public String getDescription() { return description; }
     public String getSellerName() { return sellerName; }
     public String getLocation() { return location; }

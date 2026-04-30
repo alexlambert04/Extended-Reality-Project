@@ -12,6 +12,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import java.io.File;
 import java.util.Locale;
 
+import be.kuleuven.gt.extendedrealityproject.MainActivity;
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityRegistrationBinding;
 import be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord;
@@ -95,11 +96,11 @@ public class RegistrationActivity extends AppCompatActivity {
                         return;
                     }
 
-                    Intent progressIntent = new Intent(RegistrationActivity.this, GenerationProgressActivity.class);
-                    progressIntent.putExtra(RecordingFlowContract.EXTRA_ITEM_ID, data.getId());
-                    progressIntent.putExtra(RecordingFlowContract.EXTRA_RECORDING_TITLE, title);
-                    progressIntent.putExtra(RecordingFlowContract.EXTRA_VIDEO_PATH, videoPath);
-                    startActivity(progressIntent);
+                    Intent sellIntent = new Intent(RegistrationActivity.this, MainActivity.class);
+                    sellIntent.putExtra(RecordingFlowContract.EXTRA_ITEM_ID, data.getId());
+                    sellIntent.putExtra(RecordingFlowContract.EXTRA_RECORDING_TITLE, title);
+                    sellIntent.putExtra(RecordingFlowContract.EXTRA_VIDEO_PATH, videoPath);
+                    startActivity(sellIntent);
                     finish();
                 }
 
@@ -198,4 +199,3 @@ public class RegistrationActivity extends AppCompatActivity {
         finish();
     }
 }
-

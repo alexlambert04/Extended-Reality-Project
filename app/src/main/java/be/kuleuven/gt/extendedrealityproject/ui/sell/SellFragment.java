@@ -8,7 +8,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.activity.result.ActivityResultLauncher;
@@ -19,23 +18,29 @@ import androidx.fragment.app.Fragment;
 
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.camera.CameraCaptureActivity;
+import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
 
+import java.io.File;
 import java.util.Objects;
 
 public class SellFragment extends Fragment {
 
-    private Uri selectedVideoUri = null;
-    private int photoCount = 0;
-    private boolean isPhotoMode = true;
+    public static final String ARG_ITEM_ID = "arg_item_id";
+    public static final String ARG_PREFILL_TITLE = "arg_prefill_title";
+    public static final String ARG_VIDEO_PATH = "arg_video_path";
 
-    private LinearLayout photosSection;
-    private LinearLayout videoSection;
-    private TextView photosCountLabel;
+    @Nullable
+    private SupabaseRepository repository;
+    @Nullable
+    private String pendingItemId;
+
+    private Uri selectedVideoUri = null;
+
     private TextView videoFileNameLabel;
     private TextView videoPlaceholderLabel;
 
@@ -50,14 +55,6 @@ public class SellFragment extends Fragment {
                 }
             });
 
-    private final ActivityResultLauncher<String> pickPhotoLauncher =
-            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-                if (uri != null) {
-                    photoCount++;
-                    photosCountLabel.setText(getString(R.string.sell_photos_count, photoCount));
-                }
-            });
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -69,22 +66,30 @@ public class SellFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        photosSection = view.findViewById(R.id.photos_section);
-        videoSection = view.findViewById(R.id.video_section);
-        photosCountLabel = view.findViewById(R.id.photos_count_label);
         videoFileNameLabel = view.findViewById(R.id.video_file_name_label);
         videoPlaceholderLabel = view.findViewById(R.id.video_placeholder_label);
 
-        // Method toggle
-        LinearLayout methodPhotos = view.findViewById(R.id.method_photos_card);
-        LinearLayout methodVideo = view.findViewById(R.id.method_video_card);
+        if (SupabaseRepository.isConfigured()) {
+            repository = new SupabaseRepository(requireContext());
+        }
 
-        methodPhotos.setOnClickListener(v -> selectMode(true, methodPhotos, methodVideo));
-        methodVideo.setOnClickListener(v -> selectMode(false, methodPhotos, methodVideo));
+        Bundle args = getArguments();
+        if (args != null) {
+            pendingItemId = args.getString(ARG_ITEM_ID);
+            String prefillTitle = args.getString(ARG_PREFILL_TITLE);
+            if (prefillTitle != null && !prefillTitle.trim().isEmpty()) {
+                ((TextInputEditText) view.findViewById(R.id.input_item_title)).setText(prefillTitle.trim());
+            }
 
-        // Add photo
-        view.findViewById(R.id.btn_add_photo).setOnClickListener(v ->
-                pickPhotoLauncher.launch("image/*"));
+            String videoPath = args.getString(ARG_VIDEO_PATH);
+            if (videoPath != null && !videoPath.trim().isEmpty()) {
+                File videoFile = new File(videoPath);
+                selectedVideoUri = Uri.fromFile(videoFile);
+                videoFileNameLabel.setText(videoFile.getName());
+                videoFileNameLabel.setVisibility(View.VISIBLE);
+                videoPlaceholderLabel.setText(getString(R.string.sell_video_selected));
+            }
+        }
 
         // Pick video -> opens camera capture or file picker
         view.findViewById(R.id.btn_pick_video).setOnClickListener(v -> {
@@ -116,12 +121,12 @@ public class SellFragment extends Fragment {
         ((MaterialButton) view.findViewById(R.id.btn_list_item)).setOnClickListener(v -> submitListing(view));
     }
 
-    private void selectMode(boolean photoMode, LinearLayout photosCard, LinearLayout videoCard) {
-        isPhotoMode = photoMode;
-        photosCard.setBackgroundResource(photoMode ? R.drawable.bg_capture_selected : R.drawable.bg_capture_unselected);
-        videoCard.setBackgroundResource(photoMode ? R.drawable.bg_capture_unselected : R.drawable.bg_capture_selected);
-        photosSection.setVisibility(photoMode ? View.VISIBLE : View.GONE);
-        videoSection.setVisibility(photoMode ? View.GONE : View.VISIBLE);
+    @Override
+    public void onDestroy() {
+        if (repository != null) {
+            repository.shutdown();
+        }
+        super.onDestroy();
     }
 
     private void submitListing(View root) {
@@ -134,35 +139,81 @@ public class SellFragment extends Fragment {
         TextInputEditText priceInput = root.findViewById(R.id.input_item_price);
         AutoCompleteTextView categoryInput = root.findViewById(R.id.input_item_category);
         TextInputEditText locationInput = root.findViewById(R.id.input_item_location);
+        TextInputEditText sellerInput = root.findViewById(R.id.input_seller_name);
+        TextInputEditText descriptionInput = root.findViewById(R.id.input_item_description);
 
         String title = Objects.toString(titleInput.getText(), "").trim();
-        String price = Objects.toString(priceInput.getText(), "").trim();
+        String priceText = Objects.toString(priceInput.getText(), "").trim();
         String category = categoryInput.getText().toString().trim();
         String location = Objects.toString(locationInput.getText(), "").trim();
+        String sellerName = Objects.toString(sellerInput.getText(), "").trim();
+        String description = Objects.toString(descriptionInput.getText(), "").trim();
 
         boolean valid = true;
 
-        boolean hasMedia = (isPhotoMode && photoCount > 0) || (!isPhotoMode && selectedVideoUri != null);
-        if (!hasMedia) {
-            photosCountLabel.setText(getString(R.string.sell_video_required));
+        if (selectedVideoUri == null) {
+            videoPlaceholderLabel.setText(getString(R.string.sell_video_required));
             valid = false;
         }
         if (title.isEmpty()) { titleLayout.setError(getString(R.string.sell_error_required)); valid = false; }
         else titleLayout.setError(null);
-        if (price.isEmpty()) { priceLayout.setError(getString(R.string.sell_error_required)); valid = false; }
-        else priceLayout.setError(null);
         if (category.isEmpty()) { categoryLayout.setError(getString(R.string.sell_error_required)); valid = false; }
         else categoryLayout.setError(null);
         if (location.isEmpty()) { locationLayout.setError(getString(R.string.sell_error_required)); valid = false; }
         else locationLayout.setError(null);
 
+        Double price = null;
+        if (!priceText.isEmpty()) {
+            try {
+                price = Double.parseDouble(priceText);
+                priceLayout.setError(null);
+            } catch (NumberFormatException ex) {
+                priceLayout.setError(getString(R.string.sell_error_invalid_price));
+                valid = false;
+            }
+        } else {
+            priceLayout.setError(null);
+        }
+
         if (!valid) return;
 
-        new MaterialAlertDialogBuilder(requireContext())
-                .setTitle(getString(R.string.sell_success_title))
-                .setMessage(getString(R.string.sell_success_message, title))
-                .setPositiveButton(getString(R.string.sell_success_ok), (dialog, which) -> clearForm(root))
-                .show();
+        if (pendingItemId == null || repository == null) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(getString(R.string.sell_success_title))
+                    .setMessage(getString(R.string.sell_success_message, title))
+                    .setPositiveButton(getString(R.string.sell_success_ok), (dialog, which) -> clearForm(root))
+                    .show();
+            return;
+        }
+
+        repository.updateMarketplaceItemDetailsAsync(
+                pendingItemId,
+                title,
+                sellerName,
+                location,
+                category,
+                description,
+                price,
+                new SupabaseRepository.RepositoryCallback<Void>() {
+                    @Override
+                    public void onSuccess(@Nullable Void data) {
+                        new MaterialAlertDialogBuilder(requireContext())
+                                .setTitle(getString(R.string.sell_success_title))
+                                .setMessage(getString(R.string.sell_success_message, title))
+                                .setPositiveButton(getString(R.string.sell_success_ok), (dialog, which) -> clearForm(root))
+                                .show();
+                    }
+
+                    @Override
+                    public void onError(@NonNull String message, @Nullable Throwable throwable) {
+                        new MaterialAlertDialogBuilder(requireContext())
+                                .setTitle(getString(R.string.sell_error_title))
+                                .setMessage(getString(R.string.sell_error_message, message))
+                                .setPositiveButton(getString(R.string.sell_success_ok), null)
+                                .show();
+                    }
+                }
+        );
     }
 
     private void clearForm(View root) {
@@ -173,9 +224,17 @@ public class SellFragment extends Fragment {
         ((TextInputEditText) root.findViewById(R.id.input_item_location)).setText("");
         ((TextInputEditText) root.findViewById(R.id.input_seller_name)).setText("");
         selectedVideoUri = null;
-        photoCount = 0;
         videoFileNameLabel.setVisibility(View.GONE);
         videoPlaceholderLabel.setText(R.string.sell_record_video);
-        photosCountLabel.setText(getString(R.string.sell_photos_count, 0));
+    }
+
+    public static SellFragment newInstance(@Nullable String itemId, @Nullable String title, @Nullable String videoPath) {
+        SellFragment fragment = new SellFragment();
+        Bundle args = new Bundle();
+        args.putString(ARG_ITEM_ID, itemId);
+        args.putString(ARG_PREFILL_TITLE, title);
+        args.putString(ARG_VIDEO_PATH, videoPath);
+        fragment.setArguments(args);
+        return fragment;
     }
 }
