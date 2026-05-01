@@ -88,6 +88,7 @@ dependencies {
     implementation(libs.camera.view)
     implementation(libs.okhttp)
     implementation(libs.webkit)
+    implementation(libs.exifinterface)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)

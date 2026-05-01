@@ -2,6 +2,7 @@ package be.kuleuven.gt.extendedrealityproject.ui.browse;
 
 import android.content.Context;
 import android.content.Intent;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -78,7 +79,10 @@ public class ItemCardAdapter extends RecyclerView.Adapter<ItemCardAdapter.ViewHo
             seller.setText(String.format("by %s", item.getSellerName()));
 
             if (item.getThumbnailUrl() != null && !item.getThumbnailUrl().trim().isEmpty()) {
-                ImageLoader.loadInto(image, item.getThumbnailUrl(), R.drawable.placeholder_item);
+                int targetWidthPx = resolveTargetWidthPx(image);
+                int targetHeightPx = dpToPx(image, 180);
+                ImageLoader.loadIntoSized(image, item.getThumbnailUrl(), R.drawable.placeholder_item,
+                        targetWidthPx, targetHeightPx);
             } else if (item.getImageResIds() != null && !item.getImageResIds().isEmpty()) {
                 image.setImageResource(item.getImageResIds().get(0));
             } else {
@@ -101,6 +105,20 @@ public class ItemCardAdapter extends RecyclerView.Adapter<ItemCardAdapter.ViewHo
                 intent.putExtra(ItemDetailActivity.EXTRA_ITEM_THUMBNAIL_URL, item.getThumbnailUrl());
                 ctx.startActivity(intent);
             });
+        }
+
+        private static int resolveTargetWidthPx(@NonNull ImageView image) {
+            int screenWidthPx = image.getResources().getDisplayMetrics().widthPixels;
+            int horizontalPaddingPx = dpToPx(image, 24);
+            int availableWidth = Math.max(1, screenWidthPx - horizontalPaddingPx);
+            return Math.max(1, availableWidth / 2);
+        }
+
+        private static int dpToPx(@NonNull ImageView image, int dp) {
+            return Math.round(TypedValue.applyDimension(
+                    TypedValue.COMPLEX_UNIT_DIP,
+                    dp,
+                    image.getResources().getDisplayMetrics()));
         }
     }
 }

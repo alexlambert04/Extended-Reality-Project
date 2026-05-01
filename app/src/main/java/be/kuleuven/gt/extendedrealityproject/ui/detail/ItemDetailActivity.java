@@ -3,6 +3,7 @@ package be.kuleuven.gt.extendedrealityproject.ui.detail;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.webkit.WebChromeClient;
@@ -107,8 +108,11 @@ public class ItemDetailActivity extends AppCompatActivity {
         // Header image
         ImageView headerImage = findViewById(R.id.detail_image);
         if (resolvedItem.getThumbnailUrl() != null && !resolvedItem.getThumbnailUrl().trim().isEmpty()) {
-            String detailUrl = buildDetailThumbnailUrl(resolvedItem.getThumbnailUrl());
-            ImageLoader.loadInto(headerImage, detailUrl, R.drawable.placeholder_item);
+            int targetWidthPx = resolveDetailImageWidthPx(headerImage);
+            int targetHeightPx = dpToPx(headerImage, 240);
+            String detailUrl = buildDetailThumbnailUrl(resolvedItem.getThumbnailUrl(), targetWidthPx);
+            ImageLoader.loadIntoSized(headerImage, detailUrl, R.drawable.placeholder_item,
+                    targetWidthPx, targetHeightPx);
         } else if (resolvedItem.getImageResIds() != null && !resolvedItem.getImageResIds().isEmpty()) {
             headerImage.setImageResource(resolvedItem.getImageResIds().get(0));
         }
@@ -443,15 +447,38 @@ public class ItemDetailActivity extends AppCompatActivity {
     }
 
     @NonNull
-    private String buildDetailThumbnailUrl(@NonNull String thumbnailUrl) {
+    private String buildDetailThumbnailUrl(@NonNull String thumbnailUrl, int targetWidthPx) {
         String trimmed = thumbnailUrl.trim();
-        if (trimmed.contains("width=400")) {
-            return trimmed.replace("width=400", "width=900");
+        int requestedWidth = Math.min(900, Math.max(1, targetWidthPx));
+        String withWidth = trimmed;
+        if (withWidth.contains("width=")) {
+            withWidth = withWidth.replaceAll("width=\\d+", "width=" + requestedWidth);
+        } else if (withWidth.contains("?")) {
+            withWidth = withWidth + "&width=" + requestedWidth;
+        } else {
+            withWidth = withWidth + "?width=" + requestedWidth;
         }
-        if (trimmed.contains("?")) {
-            return trimmed + "&width=900&resize=contain&format=webp";
+        if (!withWidth.contains("resize=")) {
+            withWidth = withWidth + "&resize=contain";
         }
-        return trimmed + "?width=900&resize=contain&format=webp";
+        if (!withWidth.contains("format=")) {
+            withWidth = withWidth + "&format=webp";
+        }
+        return withWidth;
+    }
+
+    private int resolveDetailImageWidthPx(@NonNull ImageView image) {
+        int screenWidthPx = image.getResources().getDisplayMetrics().widthPixels;
+        int horizontalPaddingPx = dpToPx(image, 32);
+        int availableWidth = Math.max(1, screenWidthPx - horizontalPaddingPx);
+        return Math.max(1, availableWidth);
+    }
+
+    private int dpToPx(@NonNull ImageView image, int dp) {
+        return Math.round(TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dp,
+                image.getResources().getDisplayMetrics()));
     }
 
     private static final class CachePathHandler implements WebViewAssetLoader.PathHandler {

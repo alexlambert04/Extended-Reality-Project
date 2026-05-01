@@ -4,9 +4,12 @@ import android.Manifest;
 import android.content.ContentResolver;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Matrix;
 import android.net.Uri;
 import android.os.Bundle;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -25,6 +28,7 @@ import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.util.Objects;
 
 import be.kuleuven.gt.extendedrealityproject.R;
@@ -35,6 +39,8 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
+
+import androidx.exifinterface.media.ExifInterface;
 
 public class SellFragment extends Fragment {
 
@@ -68,7 +74,13 @@ public class SellFragment extends Fragment {
                     return;
                 }
 
-                thumbnailPreview.setImageBitmap(BitmapFactory.decodeFile(selectedThumbnailFile.getAbsolutePath()));
+                normalizeThumbnailOrientation(selectedThumbnailFile);
+                Bitmap previewBitmap = loadThumbnailPreviewBitmap(selectedThumbnailFile);
+                if (previewBitmap != null) {
+                    thumbnailPreview.setImageBitmap(previewBitmap);
+                } else {
+                    thumbnailPreview.setImageResource(R.drawable.placeholder_item);
+                }
                 thumbnailPreview.setVisibility(View.VISIBLE);
                 thumbnailPlaceholder.setVisibility(View.GONE);
                 thumbnailFileNameLabel.setText(getString(R.string.sell_thumbnail_file_name, selectedThumbnailFile.getName()));
@@ -385,6 +397,99 @@ public class SellFragment extends Fragment {
         thumbnailPlaceholderLabel.setText(R.string.sell_take_thumbnail);
         thumbnailPreview.setVisibility(View.GONE);
         thumbnailPlaceholder.setVisibility(View.VISIBLE);
+    }
+
+    @Nullable
+    private Bitmap loadThumbnailPreviewBitmap(@NonNull File imageFile) {
+        int targetWidthPx = resolveThumbnailPreviewWidthPx();
+        int targetHeightPx = dpToPx(160);
+        if (targetWidthPx <= 0 || targetHeightPx <= 0) {
+            return BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+        }
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
+        options.inSampleSize = calculateInSampleSize(options, targetWidthPx, targetHeightPx);
+        options.inJustDecodeBounds = false;
+        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        return BitmapFactory.decodeFile(imageFile.getAbsolutePath(), options);
+    }
+
+    private int resolveThumbnailPreviewWidthPx() {
+        int screenWidthPx = requireContext().getResources().getDisplayMetrics().widthPixels;
+        int horizontalPaddingPx = dpToPx(32);
+        return Math.max(1, screenWidthPx - horizontalPaddingPx);
+    }
+
+    private int dpToPx(int dp) {
+        return Math.round(TypedValue.applyDimension(
+                TypedValue.COMPLEX_UNIT_DIP,
+                dp,
+                requireContext().getResources().getDisplayMetrics()));
+    }
+
+    private int calculateInSampleSize(@NonNull BitmapFactory.Options options,
+                                      int reqWidth,
+                                      int reqHeight) {
+        int height = options.outHeight;
+        int width = options.outWidth;
+        int inSampleSize = 1;
+        if (height > reqHeight || width > reqWidth) {
+            int halfHeight = height / 2;
+            int halfWidth = width / 2;
+            while ((halfHeight / inSampleSize) >= reqHeight
+                    && (halfWidth / inSampleSize) >= reqWidth) {
+                inSampleSize *= 2;
+            }
+        }
+        return Math.max(1, inSampleSize);
+    }
+
+    private void normalizeThumbnailOrientation(@NonNull File imageFile) {
+        try {
+            ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
+            int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL);
+            int rotationDegrees = exifToDegrees(orientation);
+            if (rotationDegrees == 0) {
+                return;
+            }
+
+            Bitmap original = BitmapFactory.decodeFile(imageFile.getAbsolutePath());
+            if (original == null) {
+                return;
+            }
+
+            Matrix matrix = new Matrix();
+            matrix.postRotate(rotationDegrees);
+            Bitmap rotated = Bitmap.createBitmap(original, 0, 0,
+                    original.getWidth(), original.getHeight(), matrix, true);
+            try (FileOutputStream output = new FileOutputStream(imageFile)) {
+                rotated.compress(Bitmap.CompressFormat.JPEG, 92, output);
+                output.flush();
+            }
+
+            exif.setAttribute(ExifInterface.TAG_ORIENTATION,
+                    String.valueOf(ExifInterface.ORIENTATION_NORMAL));
+            exif.saveAttributes();
+
+            if (rotated != original) {
+                original.recycle();
+            }
+        } catch (Exception ignored) {
+            // Keep original file if anything goes wrong.
+        }
+    }
+
+    private int exifToDegrees(int exifOrientation) {
+        if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_90) {
+            return 90;
+        } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_180) {
+            return 180;
+        } else if (exifOrientation == ExifInterface.ORIENTATION_ROTATE_270) {
+            return 270;
+        }
+        return 0;
     }
 
     public static SellFragment newInstance(@Nullable String itemId, @Nullable String title, @Nullable String videoPath) {
