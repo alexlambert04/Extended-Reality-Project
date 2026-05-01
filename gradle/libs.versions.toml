@@ -1,5 +1,5 @@
 [versions]
-agp = "8.3.1"
+agp = "8.13.2"
 junit = "4.13.2"
 junitVersion = "1.3.0"
 espressoCore = "3.7.0"
@@ -7,6 +7,10 @@ appcompat = "1.7.0"
 material = "1.12.0"
 constraintlayout = "2.2.1"
 arcore = "1.48.0"
+cameraX = "1.3.4"
+okhttp = "4.12.0"
+webkit = "1.12.1"
+exifinterface = "1.3.7"
 
 [libraries]
 junit = { group = "junit", name = "junit", version.ref = "junit" }
@@ -16,7 +20,14 @@ appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "a
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
 arcore = { group = "com.google.ar", name = "core", version.ref = "arcore" }
+camera-core = { group = "androidx.camera", name = "camera-core", version.ref = "cameraX" }
+camera-camera2 = { group = "androidx.camera", name = "camera-camera2", version.ref = "cameraX" }
+camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycle", version.ref = "cameraX" }
+camera-video = { group = "androidx.camera", name = "camera-video", version.ref = "cameraX" }
+camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "cameraX" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
+exifinterface = { group = "androidx.exifinterface", name = "exifinterface", version.ref = "exifinterface" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
-

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp"
+    tools:context=".camera.LocalModelsActivity">
+
+    <TextView
+        android:id="@+id/local_models_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/local_models_title"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+
+    <Button
+        android:id="@+id/refresh_models_button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:text="@string/local_models_refresh" />
+
+    <TextView
+        android:id="@+id/empty_state_text"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="@string/local_models_empty"
+        android:visibility="gone" />
+
+    <ListView
+        android:id="@+id/local_models_list"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_marginTop="12dp"
+        android:clipToPadding="false"
+        android:divider="@android:color/transparent"
+        android:dividerHeight="0dp"
+        android:paddingBottom="8dp"
+        android:layout_weight="1"
+        tools:listitem="@layout/item_local_model" />
+
+</LinearLayout>

@@ -1,16 +1,17 @@
 package be.kuleuven.gt.extendedrealityproject;
 
 import android.os.Bundle;
-import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.fragment.app.Fragment;
 
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityMainBinding;
+import be.kuleuven.gt.extendedrealityproject.ui.browse.BrowseFragment;
+import be.kuleuven.gt.extendedrealityproject.ui.sell.SellFragment;
 
 public class MainActivity extends AppCompatActivity {
 
     private ActivityMainBinding binding;
-    private final NativeBridge nativeBridge = new NativeBridge();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -19,28 +20,53 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        nativeBridge.initializeRuntime();
+        if (savedInstanceState == null) {
+            if (!handleIntent(getIntent())) {
+                loadFragment(new BrowseFragment());
+            }
+        }
 
-        TextView nativeStatus = binding.nativeStatus;
-        nativeStatus.setText(nativeBridge.getRuntimeStatus());
-
-        binding.capturePoseButton.setOnClickListener(view -> {
-            float[] dummyPose = new float[16];
-            dummyPose[0] = 1.0f;
-            dummyPose[5] = 1.0f;
-            dummyPose[10] = 1.0f;
-            dummyPose[15] = 1.0f;
-            nativeBridge.submitCameraPose(dummyPose);
+        binding.bottomNavigation.setOnItemSelectedListener(item -> {
+            int id = item.getItemId();
+            if (id == R.id.nav_browse) {
+                loadFragment(new BrowseFragment());
+                return true;
+            } else if (id == R.id.nav_sell) {
+                loadFragment(new SellFragment());
+                return true;
+            }
+            return false;
         });
+    }
 
-        binding.startTrainingButton.setOnClickListener(view -> {
-            nativeBridge.startTraining("demo-item-001");
-            nativeStatus.setText(nativeBridge.getRuntimeStatus());
-        });
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
 
-        binding.stopTrainingButton.setOnClickListener(view -> {
-            nativeBridge.stopTraining();
-            nativeStatus.setText(nativeBridge.getRuntimeStatus());
-        });
+    private boolean handleIntent(android.content.Intent intent) {
+        if (intent == null) {
+            return false;
+        }
+        String itemId = intent.getStringExtra(be.kuleuven.gt.extendedrealityproject.camera.RecordingFlowContract.EXTRA_ITEM_ID);
+        String title = intent.getStringExtra(be.kuleuven.gt.extendedrealityproject.camera.RecordingFlowContract.EXTRA_RECORDING_TITLE);
+        String videoPath = intent.getStringExtra(be.kuleuven.gt.extendedrealityproject.camera.RecordingFlowContract.EXTRA_VIDEO_PATH);
+        if (itemId == null && title == null) {
+            return false;
+        }
+
+        SellFragment fragment = SellFragment.newInstance(itemId, title, videoPath);
+        binding.bottomNavigation.setSelectedItemId(R.id.nav_sell);
+        loadFragment(fragment);
+        return true;
+    }
+
+    private void loadFragment(Fragment fragment) {
+        getSupportFragmentManager()
+                .beginTransaction()
+                .replace(R.id.fragment_container, fragment)
+                .commit();
     }
 }
