@@ -146,6 +146,7 @@ public class BrowseFragment extends Fragment {
                     "3D model generated from Supabase pipeline. Additional listing details are mocked for now.");
             Double price = record.getPrice();
             String modelUrl = nullIfBlank(record.getModelUrl());
+            String thumbnailUrl = nullIfBlank(record.getThumbnailUrl());
 
             mapped.add(new MarketplaceItem(
                     itemId,
@@ -156,6 +157,7 @@ public class BrowseFragment extends Fragment {
                     location,
                     category,
                     modelUrl,
+                    thumbnailUrl,
                     Collections.singletonList(R.drawable.placeholder_item)
             ));
         }

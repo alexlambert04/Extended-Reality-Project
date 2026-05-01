@@ -160,6 +160,7 @@ public class SupabaseRealtimeClient {
                             nullIfBlank(record.optString("file_path", "")),
                             nullIfBlank(record.optString("kiri_serialize", "")),
                             nullIfBlank(record.optString("model_url", "")),
+                            nullIfBlank(record.optString("thumbnail_url", "")),
                             nullIfBlank(record.optString("created_at", "")),
                             nullIfBlank(record.optString("used_api_key_id", "")),
                             nullIfBlank(record.optString("seller_name", "")),

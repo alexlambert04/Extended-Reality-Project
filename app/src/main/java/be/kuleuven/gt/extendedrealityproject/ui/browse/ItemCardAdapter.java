@@ -13,6 +13,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.ui.MarketplaceItem;
+import be.kuleuven.gt.extendedrealityproject.ui.ImageLoader;
 import be.kuleuven.gt.extendedrealityproject.ui.detail.ItemDetailActivity;
 
 import java.util.ArrayList;
@@ -76,7 +77,9 @@ public class ItemCardAdapter extends RecyclerView.Adapter<ItemCardAdapter.ViewHo
             category.setText(item.getCategory());
             seller.setText(String.format("by %s", item.getSellerName()));
 
-            if (item.getImageResIds() != null && !item.getImageResIds().isEmpty()) {
+            if (item.getThumbnailUrl() != null && !item.getThumbnailUrl().trim().isEmpty()) {
+                ImageLoader.loadInto(image, item.getThumbnailUrl(), R.drawable.placeholder_item);
+            } else if (item.getImageResIds() != null && !item.getImageResIds().isEmpty()) {
                 image.setImageResource(item.getImageResIds().get(0));
             } else {
                 image.setImageResource(R.drawable.placeholder_item);
@@ -95,6 +98,7 @@ public class ItemCardAdapter extends RecyclerView.Adapter<ItemCardAdapter.ViewHo
                 intent.putExtra(ItemDetailActivity.EXTRA_ITEM_LOCATION, item.getLocation());
                 intent.putExtra(ItemDetailActivity.EXTRA_ITEM_CATEGORY, item.getCategory());
                 intent.putExtra(ItemDetailActivity.EXTRA_ITEM_MODEL_URL, item.getModelUrl());
+                intent.putExtra(ItemDetailActivity.EXTRA_ITEM_THUMBNAIL_URL, item.getThumbnailUrl());
                 ctx.startActivity(intent);
             });
         }

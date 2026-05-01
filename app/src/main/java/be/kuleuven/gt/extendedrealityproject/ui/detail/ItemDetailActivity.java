@@ -34,6 +34,7 @@ import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.camera.ModelViewerActivity;
 import be.kuleuven.gt.extendedrealityproject.ui.DummyData;
 import be.kuleuven.gt.extendedrealityproject.ui.MarketplaceItem;
+import be.kuleuven.gt.extendedrealityproject.ui.ImageLoader;
 import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
 import com.google.android.material.button.MaterialButton;
@@ -50,6 +51,7 @@ public class ItemDetailActivity extends AppCompatActivity {
     public static final String EXTRA_ITEM_LOCATION = "extra_item_location";
     public static final String EXTRA_ITEM_CATEGORY = "extra_item_category";
     public static final String EXTRA_ITEM_MODEL_URL = "extra_item_model_url";
+    public static final String EXTRA_ITEM_THUMBNAIL_URL = "extra_item_thumbnail_url";
 
     private static final String MODEL_ASSET_BASE = "https://appassets.androidplatform.net";
     private static final String TAG = "ItemDetailActivity";
@@ -104,7 +106,10 @@ public class ItemDetailActivity extends AppCompatActivity {
 
         // Header image
         ImageView headerImage = findViewById(R.id.detail_image);
-        if (resolvedItem.getImageResIds() != null && !resolvedItem.getImageResIds().isEmpty()) {
+        if (resolvedItem.getThumbnailUrl() != null && !resolvedItem.getThumbnailUrl().trim().isEmpty()) {
+            String detailUrl = buildDetailThumbnailUrl(resolvedItem.getThumbnailUrl());
+            ImageLoader.loadInto(headerImage, detailUrl, R.drawable.placeholder_item);
+        } else if (resolvedItem.getImageResIds() != null && !resolvedItem.getImageResIds().isEmpty()) {
             headerImage.setImageResource(resolvedItem.getImageResIds().get(0));
         }
 
@@ -403,6 +408,7 @@ public class ItemDetailActivity extends AppCompatActivity {
                 fallback(intent.getStringExtra(EXTRA_ITEM_LOCATION), "Unknown location"),
                 fallback(intent.getStringExtra(EXTRA_ITEM_CATEGORY), "Other"),
                 trimToNull(intent.getStringExtra(EXTRA_ITEM_MODEL_URL)),
+                trimToNull(intent.getStringExtra(EXTRA_ITEM_THUMBNAIL_URL)),
                 null
         );
     }
@@ -434,6 +440,18 @@ public class ItemDetailActivity extends AppCompatActivity {
             return relative.replace('\\', '/');
         }
         return modelFile.getName();
+    }
+
+    @NonNull
+    private String buildDetailThumbnailUrl(@NonNull String thumbnailUrl) {
+        String trimmed = thumbnailUrl.trim();
+        if (trimmed.contains("width=400")) {
+            return trimmed.replace("width=400", "width=900");
+        }
+        if (trimmed.contains("?")) {
+            return trimmed + "&width=900&resize=contain&format=webp";
+        }
+        return trimmed + "?width=900&resize=contain&format=webp";
     }
 
     private static final class CachePathHandler implements WebViewAssetLoader.PathHandler {

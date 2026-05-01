@@ -118,15 +118,6 @@
         </FrameLayout>
     </com.google.android.material.card.MaterialCardView>
 
-    <!-- Image pager area -->
-    <ImageView
-        android:id="@+id/detail_image"
-        android:layout_width="match_parent"
-        android:layout_height="220dp"
-        android:scaleType="centerCrop"
-        android:contentDescription="@string/item_image_description"
-        android:background="@drawable/placeholder_item" />
-
     <!-- Scrollable detail content -->
     <androidx.core.widget.NestedScrollView
         android:id="@+id/detail_scroll_content"
@@ -139,6 +130,24 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
+
+            <!-- Image pager area -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <ImageView
+                    android:id="@+id/detail_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="240dp"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/item_image_description"
+                    android:background="@drawable/placeholder_item" />
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Category chip + title + meta row -->
             <com.google.android.material.chip.Chip

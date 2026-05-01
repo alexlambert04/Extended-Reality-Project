@@ -12,11 +12,12 @@ public class MarketplaceItem {
     private final String location;
     private final String category;
     private final String modelUrl;
+    private final String thumbnailUrl;
     private final List<Integer> imageResIds; // drawable resource ids for dummy data
 
     public MarketplaceItem(String itemId, String title, Double price, String description,
                            String sellerName, String location, String category,
-                           String modelUrl, List<Integer> imageResIds) {
+                           String modelUrl, String thumbnailUrl, List<Integer> imageResIds) {
         this.itemId = itemId;
         this.title = title;
         this.price = price;
@@ -25,6 +26,7 @@ public class MarketplaceItem {
         this.location = location;
         this.category = category;
         this.modelUrl = modelUrl;
+        this.thumbnailUrl = thumbnailUrl;
         this.imageResIds = imageResIds;
     }
 
@@ -36,5 +38,6 @@ public class MarketplaceItem {
     public String getLocation() { return location; }
     public String getCategory() { return category; }
     public String getModelUrl() { return modelUrl; }
+    public String getThumbnailUrl() { return thumbnailUrl; }
     public List<Integer> getImageResIds() { return imageResIds; }
 }

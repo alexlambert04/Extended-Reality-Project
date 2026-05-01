@@ -1,6 +1,10 @@
 package be.kuleuven.gt.extendedrealityproject.ui.sell;
 
+import android.Manifest;
+import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -8,13 +12,20 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
+import androidx.core.content.FileProvider;
 import androidx.fragment.app.Fragment;
+
+import java.io.File;
+import java.util.Objects;
 
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.camera.CameraCaptureActivity;
@@ -24,9 +35,6 @@ import com.google.android.material.button.MaterialButton;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import com.google.android.material.textfield.TextInputLayout;
-
-import java.io.File;
-import java.util.Objects;
 
 public class SellFragment extends Fragment {
 
@@ -40,9 +48,33 @@ public class SellFragment extends Fragment {
     private String pendingItemId;
 
     private Uri selectedVideoUri = null;
+    private Uri selectedThumbnailUri = null;
+    @Nullable
+    private File selectedThumbnailFile = null;
 
     private TextView videoFileNameLabel;
     private TextView videoPlaceholderLabel;
+    private TextView thumbnailPlaceholderLabel;
+    private TextView thumbnailFileNameLabel;
+    private View thumbnailPlaceholder;
+    private ImageView thumbnailPreview;
+
+    private ActivityResultLauncher<String> requestThumbnailPermissionLauncher;
+
+    private final ActivityResultLauncher<Uri> takeThumbnailLauncher =
+            registerForActivityResult(new ActivityResultContracts.TakePicture(), success -> {
+                if (!success || selectedThumbnailFile == null) {
+                    Toast.makeText(requireContext(), R.string.sell_thumbnail_capture_failed, Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
+                thumbnailPreview.setImageBitmap(BitmapFactory.decodeFile(selectedThumbnailFile.getAbsolutePath()));
+                thumbnailPreview.setVisibility(View.VISIBLE);
+                thumbnailPlaceholder.setVisibility(View.GONE);
+                thumbnailFileNameLabel.setText(getString(R.string.sell_thumbnail_file_name, selectedThumbnailFile.getName()));
+                thumbnailFileNameLabel.setVisibility(View.VISIBLE);
+                thumbnailPlaceholderLabel.setText(getString(R.string.sell_thumbnail_selected));
+            });
 
     private final ActivityResultLauncher<String> pickVideoLauncher =
             registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
@@ -68,6 +100,21 @@ public class SellFragment extends Fragment {
 
         videoFileNameLabel = view.findViewById(R.id.video_file_name_label);
         videoPlaceholderLabel = view.findViewById(R.id.video_placeholder_label);
+        thumbnailPlaceholderLabel = view.findViewById(R.id.thumbnail_placeholder_label);
+        thumbnailFileNameLabel = view.findViewById(R.id.thumbnail_file_name_label);
+        thumbnailPlaceholder = view.findViewById(R.id.thumbnail_placeholder);
+        thumbnailPreview = view.findViewById(R.id.thumbnail_preview);
+
+        requestThumbnailPermissionLauncher = registerForActivityResult(
+                new ActivityResultContracts.RequestPermission(),
+                granted -> {
+                    if (granted) {
+                        startThumbnailCapture();
+                    } else {
+                        Toast.makeText(requireContext(), R.string.camera_permission_needed, Toast.LENGTH_LONG).show();
+                    }
+                }
+        );
 
         if (SupabaseRepository.isConfigured()) {
             repository = new SupabaseRepository(requireContext());
@@ -106,6 +153,15 @@ public class SellFragment extends Fragment {
                         }
                     })
                     .show();
+        });
+
+        view.findViewById(R.id.btn_pick_thumbnail).setOnClickListener(v -> {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
+                    == PackageManager.PERMISSION_GRANTED) {
+                startThumbnailCapture();
+            } else {
+                requestThumbnailPermissionLauncher.launch(Manifest.permission.CAMERA);
+            }
         });
 
         // Category dropdown
@@ -155,6 +211,10 @@ public class SellFragment extends Fragment {
             videoPlaceholderLabel.setText(getString(R.string.sell_video_required));
             valid = false;
         }
+        if (selectedThumbnailFile == null) {
+            thumbnailPlaceholderLabel.setText(getString(R.string.sell_thumbnail_required));
+            valid = false;
+        }
         if (title.isEmpty()) { titleLayout.setError(getString(R.string.sell_error_required)); valid = false; }
         else titleLayout.setError(null);
         if (category.isEmpty()) { categoryLayout.setError(getString(R.string.sell_error_required)); valid = false; }
@@ -177,26 +237,70 @@ public class SellFragment extends Fragment {
 
         if (!valid) return;
 
-        if (pendingItemId == null || repository == null) {
+        if (repository == null || !SupabaseRepository.isConfigured()) {
             new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle(getString(R.string.sell_success_title))
-                    .setMessage(getString(R.string.sell_success_message, title))
-                    .setPositiveButton(getString(R.string.sell_success_ok), (dialog, which) -> clearForm(root))
+                    .setTitle(getString(R.string.sell_error_title))
+                    .setMessage(getString(R.string.missing_supabase_config))
+                    .setPositiveButton(getString(R.string.sell_success_ok), null)
                     .show();
             return;
         }
 
-        repository.updateMarketplaceItemDetailsAsync(
-                pendingItemId,
+        String videoPath = resolveVideoPath(selectedVideoUri);
+        if (videoPath == null) {
+            new MaterialAlertDialogBuilder(requireContext())
+                    .setTitle(getString(R.string.sell_error_title))
+                    .setMessage(getString(R.string.video_file_missing))
+                    .setPositiveButton(getString(R.string.sell_success_ok), null)
+                    .show();
+            return;
+        }
+
+        if (pendingItemId != null && !pendingItemId.trim().isEmpty()) {
+            repository.uploadThumbnailAndUpdateListingAsync(
+                    pendingItemId,
+                    selectedThumbnailFile.getAbsolutePath(),
+                    title,
+                    sellerName,
+                    location,
+                    category,
+                    description,
+                    price,
+                    new SupabaseRepository.RepositoryCallback<Void>() {
+                        @Override
+                        public void onSuccess(@Nullable Void data) {
+                            new MaterialAlertDialogBuilder(requireContext())
+                                    .setTitle(getString(R.string.sell_success_title))
+                                    .setMessage(getString(R.string.sell_success_message, title))
+                                    .setPositiveButton(getString(R.string.sell_success_ok), (dialog, which) -> clearForm(root))
+                                    .show();
+                        }
+
+                        @Override
+                        public void onError(@NonNull String message, @Nullable Throwable throwable) {
+                            new MaterialAlertDialogBuilder(requireContext())
+                                    .setTitle(getString(R.string.sell_error_title))
+                                    .setMessage(getString(R.string.sell_error_message, message))
+                                    .setPositiveButton(getString(R.string.sell_success_ok), null)
+                                    .show();
+                        }
+                    }
+            );
+            return;
+        }
+
+        repository.createAndStartGenerationWithThumbnail(
                 title,
+                videoPath,
+                selectedThumbnailFile.getAbsolutePath(),
                 sellerName,
                 location,
                 category,
                 description,
                 price,
-                new SupabaseRepository.RepositoryCallback<Void>() {
+                new SupabaseRepository.RepositoryCallback<be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord>() {
                     @Override
-                    public void onSuccess(@Nullable Void data) {
+                    public void onSuccess(@Nullable be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord data) {
                         new MaterialAlertDialogBuilder(requireContext())
                                 .setTitle(getString(R.string.sell_success_title))
                                 .setMessage(getString(R.string.sell_success_message, title))
@@ -216,6 +320,55 @@ public class SellFragment extends Fragment {
         );
     }
 
+    private void startThumbnailCapture() {
+        File cacheDir = new File(requireContext().getCacheDir(), "thumbnails");
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            Toast.makeText(requireContext(), R.string.sell_thumbnail_capture_failed, Toast.LENGTH_SHORT).show();
+            return;
+        }
+
+        selectedThumbnailFile = new File(cacheDir, "thumb_" + System.currentTimeMillis() + ".jpg");
+        selectedThumbnailUri = FileProvider.getUriForFile(
+                requireContext(),
+                requireContext().getPackageName() + ".fileprovider",
+                selectedThumbnailFile
+        );
+        takeThumbnailLauncher.launch(selectedThumbnailUri);
+    }
+
+    @Nullable
+    private String resolveVideoPath(@Nullable Uri uri) {
+        if (uri == null) {
+            return null;
+        }
+        if ("file".equalsIgnoreCase(uri.getScheme())) {
+            return uri.getPath();
+        }
+
+        ContentResolver resolver = requireContext().getContentResolver();
+        File cacheDir = new File(requireContext().getCacheDir(), "uploads");
+        if (!cacheDir.exists() && !cacheDir.mkdirs()) {
+            return null;
+        }
+
+        File outputFile = new File(cacheDir, "video_" + System.currentTimeMillis() + ".mp4");
+        try (java.io.InputStream input = resolver.openInputStream(uri);
+             java.io.FileOutputStream output = new java.io.FileOutputStream(outputFile)) {
+            if (input == null) {
+                return null;
+            }
+            byte[] buffer = new byte[16 * 1024];
+            int read;
+            while ((read = input.read(buffer)) != -1) {
+                output.write(buffer, 0, read);
+            }
+            output.flush();
+            return outputFile.getAbsolutePath();
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     private void clearForm(View root) {
         ((TextInputEditText) root.findViewById(R.id.input_item_title)).setText("");
         ((TextInputEditText) root.findViewById(R.id.input_item_price)).setText("");
@@ -224,8 +377,14 @@ public class SellFragment extends Fragment {
         ((TextInputEditText) root.findViewById(R.id.input_item_location)).setText("");
         ((TextInputEditText) root.findViewById(R.id.input_seller_name)).setText("");
         selectedVideoUri = null;
+        selectedThumbnailUri = null;
+        selectedThumbnailFile = null;
         videoFileNameLabel.setVisibility(View.GONE);
         videoPlaceholderLabel.setText(R.string.sell_record_video);
+        thumbnailFileNameLabel.setVisibility(View.GONE);
+        thumbnailPlaceholderLabel.setText(R.string.sell_take_thumbnail);
+        thumbnailPreview.setVisibility(View.GONE);
+        thumbnailPlaceholder.setVisibility(View.VISIBLE);
     }
 
     public static SellFragment newInstance(@Nullable String itemId, @Nullable String title, @Nullable String videoPath) {

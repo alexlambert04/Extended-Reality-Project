@@ -11,6 +11,7 @@ public class MarketplaceItemRecord {
     private final String filePath;
     private final String kiriSerialize;
     private final String modelUrl;
+    private final String thumbnailUrl;
     private final String createdAt;
     private final String usedApiKeyId;
     private final String sellerName;
@@ -26,6 +27,7 @@ public class MarketplaceItemRecord {
             @Nullable String filePath,
             @Nullable String kiriSerialize,
             @Nullable String modelUrl,
+            @Nullable String thumbnailUrl,
             @Nullable String createdAt,
             @Nullable String usedApiKeyId,
             @Nullable String sellerName,
@@ -40,6 +42,7 @@ public class MarketplaceItemRecord {
         this.filePath = filePath;
         this.kiriSerialize = kiriSerialize;
         this.modelUrl = modelUrl;
+        this.thumbnailUrl = thumbnailUrl;
         this.createdAt = createdAt;
         this.usedApiKeyId = usedApiKeyId;
         this.sellerName = sellerName;
@@ -77,6 +80,11 @@ public class MarketplaceItemRecord {
     @Nullable
     public String getModelUrl() {
         return modelUrl;
+    }
+
+    @Nullable
+    public String getThumbnailUrl() {
+        return thumbnailUrl;
     }
 
     @Nullable
