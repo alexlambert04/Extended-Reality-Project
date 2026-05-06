@@ -82,17 +82,45 @@
             android:text="@string/detail_tab_ar" />
     </com.google.android.material.tabs.TabLayout>
 
-    <!-- Image pager area -->
-    <ImageView
-        android:id="@+id/detail_image"
+    <!-- 3D model container (hidden unless 3D tab is active) -->
+    <com.google.android.material.card.MaterialCardView
+        android:id="@+id/detail_model_container"
         android:layout_width="match_parent"
-        android:layout_height="220dp"
-        android:scaleType="centerCrop"
-        android:contentDescription="@string/item_image_description"
-        android:background="@drawable/placeholder_item" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:visibility="gone"
+        app:cardCornerRadius="16dp"
+        app:cardElevation="0dp"
+        app:strokeWidth="2dp"
+        app:strokeColor="@color/colorPrimary">
+
+        <FrameLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+
+            <WebView
+                android:id="@+id/detail_model_webview"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@color/colorSurface" />
+
+            <ProgressBar
+                android:id="@+id/detail_model_loading"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:layout_gravity="center"
+                android:visibility="gone" />
+        </FrameLayout>
+    </com.google.android.material.card.MaterialCardView>
 
     <!-- Scrollable detail content -->
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/detail_scroll_content"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1">
@@ -102,6 +130,24 @@
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:padding="16dp">
+
+            <!-- Image pager area -->
+            <com.google.android.material.card.MaterialCardView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="0dp">
+
+                <ImageView
+                    android:id="@+id/detail_image"
+                    android:layout_width="match_parent"
+                    android:layout_height="240dp"
+                    android:scaleType="centerCrop"
+                    android:contentDescription="@string/item_image_description"
+                    android:background="@drawable/placeholder_item" />
+            </com.google.android.material.card.MaterialCardView>
 
             <!-- Category chip + title + meta row -->
             <com.google.android.material.chip.Chip
@@ -125,7 +171,7 @@
                 android:textColor="@color/colorOnSurface"
                 android:text="Item Title" />
 
-            <!-- Location / time / views row -->
+            <!-- Location row -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -140,23 +186,6 @@
                     android:textAppearance="@style/TextAppearance.Material3.BodySmall"
                     android:textColor="@color/colorOnSurfaceVariant"
                     android:text="📍 Location" />
-
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                    android:textColor="@color/colorOnSurfaceVariant"
-                    android:text="🕐 2 days ago" />
-
-                <TextView
-                    android:id="@+id/detail_views"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="12dp"
-                    android:textAppearance="@style/TextAppearance.Material3.BodySmall"
-                    android:textColor="@color/colorOnSurfaceVariant"
-                    android:text="👁 142" />
             </LinearLayout>
 
             <!-- Price -->

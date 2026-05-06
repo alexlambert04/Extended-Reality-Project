@@ -9,6 +9,7 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -19,11 +20,15 @@ import androidx.recyclerview.widget.RecyclerView;
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.ui.DummyData;
 import be.kuleuven.gt.extendedrealityproject.ui.MarketplaceItem;
+import be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord;
+import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
 import com.google.android.material.textfield.TextInputEditText;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Collections;
 
 public class BrowseFragment extends Fragment {
 
@@ -31,6 +36,8 @@ public class BrowseFragment extends Fragment {
     private List<MarketplaceItem> allItems;
     private String currentQuery = "";
     private String currentCategory = "All Categories";
+    @Nullable
+    private SupabaseRepository repository;
 
     @Nullable
     @Override
@@ -43,7 +50,10 @@ public class BrowseFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        allItems = DummyData.getItems();
+        allItems = new ArrayList<>();
+        if (SupabaseRepository.isConfigured()) {
+            repository = new SupabaseRepository(requireContext());
+        }
 
         // 2-column grid
         RecyclerView recycler = view.findViewById(R.id.recycler_items);
@@ -79,7 +89,107 @@ public class BrowseFragment extends Fragment {
         sortDropdown.setAdapter(new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_dropdown_item_1line, sorts));
 
-        applyFilter(view);
+        loadItems(view);
+    }
+
+    @Override
+    public void onDestroy() {
+        if (repository != null) {
+            repository.shutdown();
+        }
+        super.onDestroy();
+    }
+
+    private void loadItems(@NonNull View root) {
+        if (repository == null) {
+            allItems = DummyData.getItems();
+            applyFilter(root);
+            return;
+        }
+
+        repository.fetchReadyMarketplaceItemsAsync(new SupabaseRepository.RepositoryCallback<List<MarketplaceItemRecord>>() {
+            @Override
+            public void onSuccess(@Nullable List<MarketplaceItemRecord> data) {
+                if (!isAdded()) {
+                    return;
+                }
+                if (data == null || data.isEmpty()) {
+                    allItems = new ArrayList<>();
+                } else {
+                    allItems = mapRecordsToMarketplaceItems(data);
+                }
+                applyFilter(root);
+            }
+
+            @Override
+            public void onError(@NonNull String message, @Nullable Throwable throwable) {
+                if (!isAdded()) {
+                    return;
+                }
+                allItems = DummyData.getItems();
+                applyFilter(root);
+                Toast.makeText(requireContext(), getString(R.string.marketplace_load_failed, message), Toast.LENGTH_SHORT).show();
+            }
+        });
+    }
+
+    @NonNull
+    private List<MarketplaceItem> mapRecordsToMarketplaceItems(@NonNull List<MarketplaceItemRecord> records) {
+        List<MarketplaceItem> mapped = new ArrayList<>();
+        for (MarketplaceItemRecord record : records) {
+            String itemId = record.getId();
+            String title = safeText(record.getTitle(), itemId);
+            String category = safeText(record.getCategory(), "Other");
+            String seller = safeText(record.getSellerName(), mockSellerName(itemId));
+            String location = safeText(record.getLocation(), "Belgium");
+            String description = safeText(record.getDescription(),
+                    "3D model generated from Supabase pipeline. Additional listing details are mocked for now.");
+            Double price = record.getPrice();
+            String modelUrl = nullIfBlank(record.getModelUrl());
+            String thumbnailUrl = nullIfBlank(record.getThumbnailUrl());
+
+            mapped.add(new MarketplaceItem(
+                    itemId,
+                    title,
+                    price,
+                    description,
+                    seller,
+                    location,
+                    category,
+                    modelUrl,
+                    thumbnailUrl,
+                    Collections.singletonList(R.drawable.placeholder_item)
+            ));
+        }
+        return mapped;
+    }
+
+    @NonNull
+    private String safeText(@Nullable String value, @NonNull String fallback) {
+        if (value == null || value.trim().isEmpty()) {
+            return fallback;
+        }
+        return value.trim();
+    }
+
+    @Nullable
+    private String nullIfBlank(@Nullable String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    @NonNull
+    private String mockSellerName(@NonNull String itemId) {
+        int seed = Math.abs(itemId.hashCode());
+        return String.format(Locale.US, "Seller %03d", (seed % 900) + 100);
+    }
+
+    private double mockPrice(@NonNull String itemId) {
+        int seed = Math.abs(itemId.hashCode());
+        int euros = 50 + (seed % 350);
+        return (double) euros;
     }
 
     private void applyFilter(View root) {

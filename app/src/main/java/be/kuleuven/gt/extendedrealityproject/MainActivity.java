@@ -20,9 +20,10 @@ public class MainActivity extends AppCompatActivity {
         binding = ActivityMainBinding.inflate(getLayoutInflater());
         setContentView(binding.getRoot());
 
-        // Default tab
         if (savedInstanceState == null) {
-            loadFragment(new BrowseFragment());
+            if (!handleIntent(getIntent())) {
+                loadFragment(new BrowseFragment());
+            }
         }
 
         binding.bottomNavigation.setOnItemSelectedListener(item -> {
@@ -36,6 +37,30 @@ public class MainActivity extends AppCompatActivity {
             }
             return false;
         });
+    }
+
+    @Override
+    protected void onNewIntent(android.content.Intent intent) {
+        super.onNewIntent(intent);
+        setIntent(intent);
+        handleIntent(intent);
+    }
+
+    private boolean handleIntent(android.content.Intent intent) {
+        if (intent == null) {
+            return false;
+        }
+        String itemId = intent.getStringExtra(be.kuleuven.gt.extendedrealityproject.camera.RecordingFlowContract.EXTRA_ITEM_ID);
+        String title = intent.getStringExtra(be.kuleuven.gt.extendedrealityproject.camera.RecordingFlowContract.EXTRA_RECORDING_TITLE);
+        String videoPath = intent.getStringExtra(be.kuleuven.gt.extendedrealityproject.camera.RecordingFlowContract.EXTRA_VIDEO_PATH);
+        if (itemId == null && title == null) {
+            return false;
+        }
+
+        SellFragment fragment = SellFragment.newInstance(itemId, title, videoPath);
+        binding.bottomNavigation.setSelectedItemId(R.id.nav_sell);
+        loadFragment(fragment);
+        return true;
     }
 
     private void loadFragment(Fragment fragment) {

@@ -19,6 +19,7 @@ public class DummyData {
                 "Leuven, BE",
                 "Furniture",
                 null,
+                null,
                 Collections.singletonList(R.drawable.placeholder_item)
             ),
             new MarketplaceItem(
@@ -29,6 +30,7 @@ public class DummyData {
                 "Sarah M.",
                 "Ghent, BE",
                 "Electronics",
+                null,
                 null,
                 Collections.singletonList(R.drawable.placeholder_item)
             ),
@@ -41,6 +43,7 @@ public class DummyData {
                 "Brussels, BE",
                 "Furniture",
                 null,
+                null,
                 Collections.singletonList(R.drawable.placeholder_item)
             ),
             new MarketplaceItem(
@@ -51,6 +54,7 @@ public class DummyData {
                 "Jan P.",
                 "Antwerp, BE",
                 "Sports",
+                null,
                 null,
                 Collections.singletonList(R.drawable.placeholder_item)
             ),
@@ -63,6 +67,7 @@ public class DummyData {
                 "Bruges, BE",
                 "Electronics",
                 null,
+                null,
                 Collections.singletonList(R.drawable.placeholder_item)
             ),
             new MarketplaceItem(
@@ -74,9 +79,9 @@ public class DummyData {
                 "Leuven, BE",
                 "Furniture",
                 null,
+                null,
                 Collections.singletonList(R.drawable.placeholder_item)
             )
         );
     }
 }
-

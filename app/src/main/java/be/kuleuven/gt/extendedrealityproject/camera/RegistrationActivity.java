@@ -6,15 +6,17 @@ import android.text.TextUtils;
 import android.view.View;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import java.io.File;
 import java.util.Locale;
 
+import be.kuleuven.gt.extendedrealityproject.MainActivity;
 import be.kuleuven.gt.extendedrealityproject.R;
 import be.kuleuven.gt.extendedrealityproject.databinding.ActivityRegistrationBinding;
-import be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord;
 import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
 public class RegistrationActivity extends AppCompatActivity {
@@ -86,25 +88,25 @@ public class RegistrationActivity extends AppCompatActivity {
             }
 
             setLoading(true);
-            repository.createAndStartGeneration(title, videoPath, new SupabaseRepository.RepositoryCallback<MarketplaceItemRecord>() {
+            repository.createAndStartGeneration(title, videoPath, new SupabaseRepository.RepositoryCallback<be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord>() {
                 @Override
-                public void onSuccess(MarketplaceItemRecord data) {
+                public void onSuccess(@Nullable be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord data) {
                     setLoading(false);
                     if (data == null) {
                         Toast.makeText(RegistrationActivity.this, R.string.generation_kickoff_failed, Toast.LENGTH_SHORT).show();
                         return;
                     }
 
-                    Intent progressIntent = new Intent(RegistrationActivity.this, GenerationProgressActivity.class);
-                    progressIntent.putExtra(RecordingFlowContract.EXTRA_ITEM_ID, data.getId());
-                    progressIntent.putExtra(RecordingFlowContract.EXTRA_RECORDING_TITLE, title);
-                    progressIntent.putExtra(RecordingFlowContract.EXTRA_VIDEO_PATH, videoPath);
-                    startActivity(progressIntent);
+                    Intent sellIntent = new Intent(RegistrationActivity.this, MainActivity.class);
+                    sellIntent.putExtra(RecordingFlowContract.EXTRA_ITEM_ID, data.getId());
+                    sellIntent.putExtra(RecordingFlowContract.EXTRA_RECORDING_TITLE, title);
+                    sellIntent.putExtra(RecordingFlowContract.EXTRA_VIDEO_PATH, videoPath);
+                    startActivity(sellIntent);
                     finish();
                 }
 
                 @Override
-                public void onError(String message, Throwable throwable) {
+                public void onError(@NonNull String message, @Nullable Throwable throwable) {
                     setLoading(false);
                     if (SupabaseRepository.isCreditsExhaustedError(message, throwable)) {
                         creditsExhausted = true;
@@ -135,7 +137,7 @@ public class RegistrationActivity extends AppCompatActivity {
         binding.generateModelButton.setEnabled(!loading && !creditsExhausted);
         binding.redoRecordingButton.setEnabled(!loading);
         binding.titleInput.setEnabled(!loading);
-        binding.generateModelButton.setVisibility(View.VISIBLE);
+        binding.registrationLoading.setVisibility(loading ? View.VISIBLE : View.GONE);
     }
 
     private void refreshCreditsStatus() {
@@ -198,4 +200,3 @@ public class RegistrationActivity extends AppCompatActivity {
         finish();
     }
 }
-

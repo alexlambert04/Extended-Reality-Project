@@ -89,6 +89,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.glide)
     implementation(libs.webkit)
+    implementation(libs.exifinterface)
     implementation(libs.androidx.webkit)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)

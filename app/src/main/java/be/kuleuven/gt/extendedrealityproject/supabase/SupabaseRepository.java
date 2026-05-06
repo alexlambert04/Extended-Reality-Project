@@ -37,6 +37,7 @@ public class SupabaseRepository {
 
     private static final MediaType JSON_MEDIA = MediaType.parse("application/json; charset=utf-8");
     private static final MediaType VIDEO_MEDIA = MediaType.parse("video/mp4");
+    private static final MediaType IMAGE_MEDIA = MediaType.parse("image/jpeg");
     private static final String CREDITS_EXHAUSTED_CODE = "CREDITS_EXHAUSTED";
     private static final String TAG = "SupabaseRepository";
 
@@ -83,6 +84,47 @@ public class SupabaseRepository {
                 updateFilePath(created.getId(), objectPath);
                 invokeStartKiriJob(created.getId());
                 MarketplaceItemRecord current = fetchMarketplaceItem(created.getId());
+                postSuccess(callback, current);
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
+    public void createAndStartGenerationWithThumbnail(
+            @NonNull String title,
+            @NonNull String videoPath,
+            @NonNull String thumbnailPath,
+            @Nullable String sellerName,
+            @Nullable String location,
+            @Nullable String category,
+            @Nullable String description,
+            @Nullable Double price,
+            @NonNull RepositoryCallback<MarketplaceItemRecord> callback
+    ) {
+        executor.execute(() -> {
+            try {
+                String itemId = java.util.UUID.randomUUID().toString();
+                String thumbnailObjectPath = itemId + "/thumb.jpg";
+                uploadThumbnail(thumbnailObjectPath, thumbnailPath);
+                String thumbnailUrl = buildThumbnailPublicUrl(thumbnailObjectPath);
+
+                MarketplaceItemRecord created = insertMarketplaceItem(
+                        itemId,
+                        title,
+                        thumbnailUrl,
+                        sellerName,
+                        location,
+                        category,
+                        description,
+                        price
+                );
+
+                String objectPath = itemId + "/video.mp4";
+                uploadVideo(objectPath, videoPath);
+                updateFilePath(itemId, objectPath);
+                invokeStartKiriJob(itemId);
+                MarketplaceItemRecord current = fetchMarketplaceItem(itemId);
                 postSuccess(callback, current);
             } catch (Exception exception) {
                 postError(callback, userMessage(exception), exception);
@@ -194,6 +236,36 @@ public class SupabaseRepository {
         return parseMarketplaceItem(object);
     }
 
+    private MarketplaceItemRecord insertMarketplaceItem(
+            @NonNull String itemId,
+            @NonNull String title,
+            @NonNull String thumbnailUrl,
+            @Nullable String sellerName,
+            @Nullable String location,
+            @Nullable String category,
+            @Nullable String description,
+            @Nullable Double price
+    ) throws IOException, JSONException {
+        JSONObject body = new JSONObject();
+        body.put("id", itemId);
+        body.put("title", title);
+        body.put("thumbnail_url", thumbnailUrl);
+        body.put("status", PipelineStatus.UPLOADING.name());
+        putOptional(body, "seller_name", sellerName);
+        putOptional(body, "location", location);
+        putOptional(body, "category", category);
+        putOptional(body, "description", description);
+        body.put("price", price == null ? JSONObject.NULL : price);
+
+        Request request = baseApiRequest(baseUrl + "/rest/v1/MarketplaceItems")
+                .addHeader("Prefer", "return=representation")
+                .post(RequestBody.create(body.toString(), JSON_MEDIA))
+                .build();
+
+        JSONObject object = executeForSingleObject(request);
+        return parseMarketplaceItem(object);
+    }
+
     private void uploadVideo(@NonNull String objectPath, @NonNull String localVideoPath)
             throws IOException {
         File videoFile = new File(localVideoPath);
@@ -207,6 +279,27 @@ public class SupabaseRepository {
                 .build();
 
         executeWithoutBody(request);
+    }
+
+    private void uploadThumbnail(@NonNull String objectPath, @NonNull String localImagePath)
+            throws IOException {
+        File imageFile = new File(localImagePath);
+        if (!imageFile.exists()) {
+            throw new IOException("Thumbnail file not found at " + localImagePath);
+        }
+
+        Request request = baseApiRequest(baseUrl + "/storage/v1/object/thumbnails/" + objectPath)
+                .addHeader("x-upsert", "true")
+                .post(RequestBody.create(imageFile, IMAGE_MEDIA))
+                .build();
+
+        executeWithoutBody(request);
+    }
+
+    @NonNull
+    private String buildThumbnailPublicUrl(@NonNull String objectPath) {
+        return baseUrl + "/storage/v1/object/public/thumbnails/" + objectPath
+                + "?width=400&resize=contain&format=webp";
     }
 
     private void updateFilePath(@NonNull String itemId, @NonNull String objectPath)
@@ -404,16 +497,46 @@ public class SupabaseRepository {
         String id = object.optString("id", "");
         String title = object.optString("title", "");
         String statusText = object.optString("status", PipelineStatus.UNKNOWN.name());
+        String usedApiKeyId = nullIfBlank(object.optString("used_api_key_id", ""));
+        String sellerName = nullIfBlank(object.optString("seller_name", ""));
+        String location = nullIfBlank(object.optString("location", ""));
+        String category = nullIfBlank(object.optString("category", ""));
+        String description = nullIfBlank(object.optString("description", ""));
+        String thumbnailUrl = nullIfBlank(object.optString("thumbnail_url", ""));
+        Double price = nullableDouble(object, "price");
 
         return new MarketplaceItemRecord(
                 id,
                 title,
                 PipelineStatus.from(statusText),
-                object.optString("file_path", ""),
-                object.optString("kiri_serialize", ""),
-                object.optString("model_url", ""),
-                object.optString("created_at", "")
+                nullIfBlank(object.optString("file_path", "")),
+                nullIfBlank(object.optString("kiri_serialize", "")),
+                nullIfBlank(object.optString("model_url", "")),
+                thumbnailUrl,
+                nullIfBlank(object.optString("created_at", "")),
+                usedApiKeyId,
+                sellerName,
+                location,
+                category,
+                description,
+                price
         );
+    }
+
+    @Nullable
+    private String nullIfBlank(@Nullable String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    @Nullable
+    private Double nullableDouble(@NonNull JSONObject object, @NonNull String key) {
+        if (!object.has(key) || object.isNull(key)) {
+            return null;
+        }
+        return object.optDouble(key);
     }
 
     @NonNull
@@ -504,7 +627,11 @@ public class SupabaseRepository {
 
         File zipFile = new File(outputDir, "model.zip");
         try {
+            Log.d(TAG, "Downloading model zip: itemId=" + itemId + " url=" + modelUrl + " -> " + zipFile.getAbsolutePath());
             downloadToFile(modelUrl, zipFile);
+            if (!zipFile.exists() || zipFile.length() == 0) {
+                throw new IOException("Downloaded model.zip is missing or empty: " + zipFile.getAbsolutePath());
+            }
 
             File modelFile = extractPreferredModel(zipFile, outputDir);
             if (modelFile == null) {
@@ -518,7 +645,6 @@ public class SupabaseRepository {
         }
     }
 
-    @NonNull
     private File downloadAndExtractPly(@NonNull String itemId, @NonNull String modelUrl) throws IOException {
         if (modelUrl.trim().isEmpty()) {
             throw new IOException("Model URL is empty.");
@@ -531,7 +657,11 @@ public class SupabaseRepository {
 
         File zipFile = new File(outputDir, "model.zip");
         try {
+            Log.d(TAG, "Downloading model zip (ply): itemId=" + itemId + " url=" + modelUrl + " -> " + zipFile.getAbsolutePath());
             downloadToFile(modelUrl, zipFile);
+            if (!zipFile.exists() || zipFile.length() == 0) {
+                throw new IOException("Downloaded model.zip is missing or empty: " + zipFile.getAbsolutePath());
+            }
 
             File modelFile = extractPly(zipFile, outputDir);
             if (modelFile == null) {
@@ -546,6 +676,11 @@ public class SupabaseRepository {
     }
 
     private void downloadToFile(@NonNull String url, @NonNull File outputFile) throws IOException {
+        File parent = outputFile.getParentFile();
+        if (parent != null && !parent.exists() && !parent.mkdirs()) {
+            throw new IOException("Could not create download directory: " + parent.getAbsolutePath());
+        }
+
         Request request = new Request.Builder()
                 .url(url)
                 .addHeader("Accept", "application/octet-stream")
@@ -570,6 +705,9 @@ public class SupabaseRepository {
                 }
                 fileOutputStream.flush();
             }
+        } catch (IOException exception) {
+            Log.e(TAG, "Model download failed: url=" + url + " file=" + outputFile.getAbsolutePath(), exception);
+            throw exception;
         }
     }
 
@@ -678,5 +816,81 @@ public class SupabaseRepository {
             super(message);
         }
     }
-}
 
+    public void updateMarketplaceItemDetailsAsync(
+            @NonNull String itemId,
+            @Nullable String title,
+            @Nullable String sellerName,
+            @Nullable String location,
+            @Nullable String category,
+            @Nullable String description,
+            @Nullable Double price,
+            @Nullable String thumbnailUrl,
+            @NonNull RepositoryCallback<Void> callback
+    ) {
+        executor.execute(() -> {
+            try {
+                updateMarketplaceItemDetails(itemId, title, sellerName, location, category, description, price, thumbnailUrl);
+                postSuccess(callback, null);
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
+    public void uploadThumbnailAndUpdateListingAsync(
+            @NonNull String itemId,
+            @NonNull String thumbnailPath,
+            @Nullable String title,
+            @Nullable String sellerName,
+            @Nullable String location,
+            @Nullable String category,
+            @Nullable String description,
+            @Nullable Double price,
+            @NonNull RepositoryCallback<Void> callback
+    ) {
+        executor.execute(() -> {
+            try {
+                String thumbnailObjectPath = itemId + "/thumb.jpg";
+                uploadThumbnail(thumbnailObjectPath, thumbnailPath);
+                String thumbnailUrl = buildThumbnailPublicUrl(thumbnailObjectPath);
+                updateMarketplaceItemDetails(itemId, title, sellerName, location, category, description, price, thumbnailUrl);
+                postSuccess(callback, null);
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
+    private void updateMarketplaceItemDetails(
+            @NonNull String itemId,
+            @Nullable String title,
+            @Nullable String sellerName,
+            @Nullable String location,
+            @Nullable String category,
+            @Nullable String description,
+            @Nullable Double price,
+            @Nullable String thumbnailUrl
+    ) throws IOException, JSONException {
+        JSONObject body = new JSONObject();
+        putOptional(body, "title", title);
+        putOptional(body, "seller_name", sellerName);
+        putOptional(body, "location", location);
+        putOptional(body, "category", category);
+        putOptional(body, "description", description);
+        putOptional(body, "thumbnail_url", thumbnailUrl);
+        body.put("price", price == null ? JSONObject.NULL : price);
+
+        Request request = baseApiRequest(baseUrl + "/rest/v1/MarketplaceItems?id=eq." + itemId)
+                .addHeader("Prefer", "return=minimal")
+                .method("PATCH", RequestBody.create(body.toString(), JSON_MEDIA))
+                .build();
+
+        executeWithoutBody(request);
+    }
+
+    private void putOptional(@NonNull JSONObject body, @NonNull String key, @Nullable String value) throws JSONException {
+        String trimmed = value == null ? null : value.trim();
+        body.put(key, trimmed == null || trimmed.isEmpty() ? JSONObject.NULL : trimmed);
+    }
+}

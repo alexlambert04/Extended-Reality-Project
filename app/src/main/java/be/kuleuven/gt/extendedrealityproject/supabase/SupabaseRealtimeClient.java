@@ -4,6 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -156,10 +157,17 @@ public class SupabaseRealtimeClient {
                             record.optString("id", ""),
                             record.optString("title", ""),
                             PipelineStatus.from(record.optString("status", "UNKNOWN")),
-                            record.optString("file_path", ""),
-                            record.optString("kiri_serialize", ""),
-                            record.optString("model_url", ""),
-                            record.optString("created_at", "")
+                            nullIfBlank(record.optString("file_path", "")),
+                            nullIfBlank(record.optString("kiri_serialize", "")),
+                            nullIfBlank(record.optString("model_url", "")),
+                            nullIfBlank(record.optString("thumbnail_url", "")),
+                            nullIfBlank(record.optString("created_at", "")),
+                            nullIfBlank(record.optString("used_api_key_id", "")),
+                            nullIfBlank(record.optString("seller_name", "")),
+                            nullIfBlank(record.optString("location", "")),
+                            nullIfBlank(record.optString("category", "")),
+                            nullIfBlank(record.optString("description", "")),
+                            nullableDouble(record, "price")
                     );
                     mainHandler.post(() -> listener.onItemUpdate(item, raw));
                 }
@@ -171,10 +179,25 @@ public class SupabaseRealtimeClient {
         }
     }
 
+    @Nullable
+    private String nullIfBlank(@Nullable String value) {
+        if (value == null || value.trim().isEmpty()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    @Nullable
+    private Double nullableDouble(@NonNull JSONObject object, @NonNull String key) {
+        if (!object.has(key) || object.isNull(key)) {
+            return null;
+        }
+        return object.optDouble(key);
+    }
+
     public interface RealtimeListener {
         void onItemUpdate(@NonNull MarketplaceItemRecord item, @NonNull String rawPayload);
 
         void onInfo(@NonNull String message);
     }
 }
-

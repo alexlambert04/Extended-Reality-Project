@@ -62,7 +62,7 @@
     <string name="shorter_recording_hint">This recording is above upload limits. Please scan again with a shorter video (about 30 to 60 seconds).</string>
     <string name="video_file_missing">Recorded video file not found. Please record again.</string>
     <string name="video_too_large_title">Video Too Large</string>
-    <string name="video_too_large">This video is %1$s and exceeds the 50 MB upload limit. Please record a shorter scan.</string>
+    <string name="video_too_large">This video is %1$s and exceeds the 150 MB upload limit. Please record a shorter scan.</string>
     <string name="video_too_large_action_redo">Redo Recording</string>
     <string name="recorded_video_size_label">File size: %1$s</string>
     <string name="open_local_models">Open Marketplace Gallery</string>
@@ -147,7 +147,7 @@
 
     <!-- Sell screen -->
     <string name="sell_title">List your item</string>
-    <string name="sell_subtitle">Upload photos or a video to create a stunning 3D model</string>
+    <string name="sell_subtitle">Upload a video to create a stunning 3D model</string>
     <string name="sell_capture_method_title">3D Capture Method</string>
     <string name="sell_method_photos">Multiple Photos</string>
     <string name="sell_method_photos_hint">Min. 12-15 photos</string>
@@ -158,7 +158,7 @@
     <string name="sell_item_details_title">Item Details</string>
     <string name="sell_video_placeholder">Tap to add a video of your item\n(record or pick from gallery)</string>
     <string name="sell_video_selected">✓ Video selected</string>
-    <string name="sell_video_required">Please add photos or a video of your item</string>
+    <string name="sell_video_required">Please add a video of your item</string>
     <string name="sell_video_preview_desc">Selected video thumbnail</string>
     <string name="sell_record_video">Record Video</string>
     <string name="sell_pick_video">Pick from Gallery</string>
@@ -178,6 +178,15 @@
     <string name="sell_cancel">Cancel</string>
     <string name="sell_error_required">This field is required</string>
     <string name="sell_success_title">Item Listed!</string>
-    <string name="sell_success_message">\'%1$s\' has been listed successfully. (Demo only — no real upload)</string>
+    <string name="sell_success_message">"%1$s" details saved to the marketplace.</string>
     <string name="sell_success_ok">OK</string>
+    <string name="sell_error_invalid_price">Enter a valid price</string>
+    <string name="sell_error_title">Listing update failed</string>
+    <string name="sell_error_message">Could not update the listing: %1$s</string>
+    <string name="sell_take_thumbnail">Take Thumbnail Photo</string>
+    <string name="sell_thumbnail_required">Please take a thumbnail photo</string>
+    <string name="sell_thumbnail_preview_desc">Thumbnail preview</string>
+    <string name="sell_thumbnail_selected">✓ Thumbnail captured</string>
+    <string name="sell_thumbnail_capture_failed">Thumbnail capture failed.</string>
+    <string name="sell_thumbnail_file_name">Thumbnail saved: %1$s</string>
 </resources>
