@@ -15,4 +15,7 @@
     <color name="colorHeroBg">#EFF6FF</color>
     <color name="colorHeroAccent">#3B82F6</color>
     <color name="colorCardBorder">#E2E8F0</color>
+    <color name="colorInputBackground">#FFFFFF</color>
+    <color name="colorInputText">#0F172A</color>
+    <color name="colorInputHint">#64748B</color>
 </resources>

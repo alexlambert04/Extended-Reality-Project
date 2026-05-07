@@ -7,8 +7,9 @@
     <string name="start_training">Start 3DGS Training</string>
     <string name="stop_training">Stop Training</string>
     <string name="camera_screen_title">Scan Your Object</string>
+    <string name="camera_guide_next">Next – Start Recording</string>
     <string name="camera_guidance">Move slowly around the object. For simple shapes, a ~30-second 360 video is often enough.</string>
-    <string name="camera_timer_initial">00:00 / 03:00</string>
+    <string name="camera_timer_initial">00:00 / 00:30</string>
     <string name="start_recording">Start Recording</string>
     <string name="stop_recording">Stop Recording</string>
     <string name="recording_recommendation_hint">You reached 30 seconds. You can stop now for simple objects.</string>
@@ -143,10 +144,18 @@
     <string name="detail_back">Back</string>
     <string name="detail_views">%1$d views</string>
     <string name="detail_days_ago">%1$d days ago</string>
+    <string name="detail_location_value">Location: %1$s</string>
+    <string name="detail_placeholder_category">Category</string>
+    <string name="detail_placeholder_title">Item Title</string>
+    <string name="detail_placeholder_location">Location</string>
+    <string name="detail_placeholder_price">EUR 0</string>
+    <string name="detail_placeholder_description">Description</string>
+    <string name="detail_placeholder_avatar">A</string>
+    <string name="detail_placeholder_seller">Seller Name</string>
 
     <!-- Sell screen -->
     <string name="sell_title">List your item</string>
-    <string name="sell_subtitle">Upload a video to create a stunning 3D model</string>
+    <string name="sell_subtitle">Record a short video, add details, and list your item for the marketplace.</string>
     <string name="sell_capture_method_title">3D Capture Method</string>
     <string name="sell_method_photos">Multiple Photos</string>
     <string name="sell_method_photos_hint">Min. 12-15 photos</string>

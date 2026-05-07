@@ -11,9 +11,19 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@color/colorSurface"
-        android:gravity="center"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
+        android:baselineAligned="false"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         android:elevation="2dp">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_splatmarket_logo"
+            android:contentDescription="@string/app_display_name" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -68,7 +78,9 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:hint="@string/browse_search_hint"
+                        app:hintTextColor="@color/colorInputHint"
                     app:startIconDrawable="@android:drawable/ic_menu_search"
+                        app:startIconTint="@color/colorOnSurfaceVariant"
                     app:boxBackgroundColor="@color/colorSurface"
                     app:boxCornerRadiusTopStart="28dp"
                     app:boxCornerRadiusTopEnd="28dp"
@@ -83,7 +95,10 @@
                         android:layout_height="wrap_content"
                         android:imeOptions="actionSearch"
                         android:inputType="text"
-                        android:singleLine="true" />
+                        android:singleLine="true"
+                        android:textColor="@color/colorInputText"
+                        android:textColorHint="@color/colorInputHint"
+                        android:textColorHighlight="@color/black" />
                 </com.google.android.material.textfield.TextInputLayout>
 
                 <!-- Filters row -->
@@ -91,29 +106,43 @@
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
                     android:layout_marginTop="12dp"
-                    android:orientation="horizontal">
+                    android:orientation="horizontal"
+                    android:baselineAligned="false">
 
                     <com.google.android.material.textfield.TextInputLayout
                         android:id="@+id/dropdown_category_layout"
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:minHeight="52dp"
                         android:layout_weight="1"
                         android:layout_marginEnd="8dp"
+                        app:hintEnabled="false"
                         app:boxBackgroundColor="@color/colorSurface"
-                        app:boxCornerRadiusTopStart="10dp"
-                        app:boxCornerRadiusTopEnd="10dp"
-                        app:boxCornerRadiusBottomStart="10dp"
-                        app:boxCornerRadiusBottomEnd="10dp"
-                        app:boxStrokeWidth="0dp"
-                        app:boxStrokeWidthFocused="0dp"
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/colorCardBorder"
+                        app:boxStrokeWidth="1dp"
+                        app:boxStrokeWidthFocused="2dp"
+                        app:startIconTint="@color/colorOnSurfaceVariant"
                         app:startIconDrawable="@android:drawable/ic_menu_sort_by_size">
 
                         <AutoCompleteTextView
                             android:id="@+id/dropdown_category"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/browse_filter_categories"
+                            android:ellipsize="end"
                             android:inputType="none"
+                            android:maxLines="1"
+                            android:paddingTop="14dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="14dp"
+                            android:singleLine="true"
+                            android:textColor="@color/colorInputText"
+                            android:textColorHint="@color/colorInputHint"
                             android:text="@string/browse_filter_categories" />
                     </com.google.android.material.textfield.TextInputLayout>
 
@@ -122,20 +151,34 @@
                         style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.ExposedDropdownMenu"
                         android:layout_width="0dp"
                         android:layout_height="wrap_content"
+                        android:minHeight="52dp"
                         android:layout_weight="1"
+                        app:hintEnabled="false"
                         app:boxBackgroundColor="@color/colorSurface"
-                        app:boxCornerRadiusTopStart="10dp"
-                        app:boxCornerRadiusTopEnd="10dp"
-                        app:boxCornerRadiusBottomStart="10dp"
-                        app:boxCornerRadiusBottomEnd="10dp"
-                        app:boxStrokeWidth="0dp"
-                        app:boxStrokeWidthFocused="0dp">
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/colorCardBorder"
+                        app:boxStrokeWidth="1dp"
+                        app:boxStrokeWidthFocused="2dp"
+                        app:startIconTint="@color/colorOnSurfaceVariant"
+                        app:startIconDrawable="@android:drawable/ic_menu_manage">
 
                         <AutoCompleteTextView
                             android:id="@+id/dropdown_sort"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
+                            android:contentDescription="@string/browse_filter_sort"
+                            android:ellipsize="end"
                             android:inputType="none"
+                            android:maxLines="1"
+                            android:paddingTop="14dp"
+                            android:paddingEnd="8dp"
+                            android:paddingBottom="14dp"
+                            android:singleLine="true"
+                            android:textColor="@color/colorInputText"
+                            android:textColorHint="@color/colorInputHint"
                             android:text="@string/browse_filter_sort" />
                     </com.google.android.material.textfield.TextInputLayout>
                 </LinearLayout>

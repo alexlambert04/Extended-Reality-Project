@@ -88,17 +88,6 @@ public class SellFragment extends Fragment {
                 thumbnailPlaceholderLabel.setText(getString(R.string.sell_thumbnail_selected));
             });
 
-    private final ActivityResultLauncher<String> pickVideoLauncher =
-            registerForActivityResult(new ActivityResultContracts.GetContent(), uri -> {
-                if (uri != null) {
-                    selectedVideoUri = uri;
-                    String name = uri.getLastPathSegment();
-                    videoFileNameLabel.setText(name != null ? name : uri.toString());
-                    videoFileNameLabel.setVisibility(View.VISIBLE);
-                    videoPlaceholderLabel.setText(getString(R.string.sell_video_selected));
-                }
-            });
-
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
@@ -150,22 +139,9 @@ public class SellFragment extends Fragment {
             }
         }
 
-        // Pick video -> opens camera capture or file picker
-        view.findViewById(R.id.btn_pick_video).setOnClickListener(v -> {
-            new MaterialAlertDialogBuilder(requireContext())
-                    .setTitle("Add Video")
-                    .setItems(new CharSequence[]{
-                            getString(R.string.sell_record_video),
-                            getString(R.string.sell_pick_video)
-                    }, (dialog, which) -> {
-                        if (which == 0) {
-                            startActivity(new Intent(requireContext(), CameraCaptureActivity.class));
-                        } else {
-                            pickVideoLauncher.launch("video/*");
-                        }
-                    })
-                    .show();
-        });
+        // Video upload now only supports recording flow.
+        view.findViewById(R.id.btn_pick_video)
+                .setOnClickListener(v -> startActivity(new Intent(requireContext(), CameraCaptureActivity.class)));
 
         view.findViewById(R.id.btn_pick_thumbnail).setOnClickListener(v -> {
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.CAMERA)
@@ -182,11 +158,9 @@ public class SellFragment extends Fragment {
         categoryInput.setAdapter(new ArrayAdapter<>(requireContext(),
                 android.R.layout.simple_dropdown_item_1line, categories));
 
-        // Cancel
-        ((MaterialButton) view.findViewById(R.id.btn_cancel)).setOnClickListener(v -> clearForm(view));
 
         // List Item
-        ((MaterialButton) view.findViewById(R.id.btn_list_item)).setOnClickListener(v -> submitListing(view));
+        view.findViewById(R.id.btn_list_item).setOnClickListener(v -> submitListing(view));
     }
 
     @Override
@@ -278,7 +252,7 @@ public class SellFragment extends Fragment {
                     category,
                     description,
                     price,
-                    new SupabaseRepository.RepositoryCallback<Void>() {
+                    new SupabaseRepository.RepositoryCallback<>() {
                         @Override
                         public void onSuccess(@Nullable Void data) {
                             new MaterialAlertDialogBuilder(requireContext())
@@ -310,7 +284,7 @@ public class SellFragment extends Fragment {
                 category,
                 description,
                 price,
-                new SupabaseRepository.RepositoryCallback<be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord>() {
+                new SupabaseRepository.RepositoryCallback<>() {
                     @Override
                     public void onSuccess(@Nullable be.kuleuven.gt.extendedrealityproject.supabase.MarketplaceItemRecord data) {
                         new MaterialAlertDialogBuilder(requireContext())

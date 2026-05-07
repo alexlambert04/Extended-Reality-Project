@@ -38,7 +38,6 @@ import be.kuleuven.gt.extendedrealityproject.ui.MarketplaceItem;
 import be.kuleuven.gt.extendedrealityproject.ui.ImageLoader;
 import be.kuleuven.gt.extendedrealityproject.supabase.SupabaseRepository;
 
-import com.google.android.material.button.MaterialButton;
 import com.google.android.material.chip.Chip;
 import com.google.android.material.tabs.TabLayout;
 
@@ -83,6 +82,8 @@ public class ItemDetailActivity extends AppCompatActivity {
         // Back button
         ImageButton btnBack = findViewById(R.id.btn_back);
         btnBack.setOnClickListener(v -> finish());
+        findViewById(R.id.btn_back_label).setOnClickListener(v -> finish());
+        findViewById(R.id.back_row).setOnClickListener(v -> finish());
 
         String itemId = getIntent().getStringExtra(EXTRA_ITEM_ID);
         MarketplaceItem item = itemFromIntent(itemId);
@@ -106,7 +107,7 @@ public class ItemDetailActivity extends AppCompatActivity {
         setupWebView(modelWebView);
 
         // Header image
-        ImageView headerImage = findViewById(R.id.detail_image);
+        ImageView headerImage = (ImageView) detailImage;
         if (resolvedItem.getThumbnailUrl() != null && !resolvedItem.getThumbnailUrl().trim().isEmpty()) {
             int targetWidthPx = resolveDetailImageWidthPx(headerImage);
             int targetHeightPx = dpToPx(headerImage, 240);
@@ -132,13 +133,13 @@ public class ItemDetailActivity extends AppCompatActivity {
         }
 
         ((TextView) findViewById(R.id.detail_description)).setText(resolvedItem.getDescription());
-        ((TextView) findViewById(R.id.detail_location)).setText("📍 " + resolvedItem.getLocation());
+        ((TextView) findViewById(R.id.detail_location))
+                .setText(getString(R.string.detail_location_value, resolvedItem.getLocation()));
         ((Chip) findViewById(R.id.detail_category_chip)).setText(resolvedItem.getCategory());
 
         // Seller
         String sellerName = resolvedItem.getSellerName();
         ((TextView) findViewById(R.id.detail_seller_name)).setText(sellerName);
-        ((TextView) findViewById(R.id.detail_seller_since)).setText(getString(R.string.detail_member_since, "2024"));
         // Avatar initial
         String initial = sellerName.isEmpty() ? "?" : String.valueOf(sellerName.charAt(0)).toUpperCase(Locale.getDefault());
         ((TextView) findViewById(R.id.detail_seller_avatar)).setText(initial);
@@ -167,17 +168,15 @@ public class ItemDetailActivity extends AppCompatActivity {
         });
 
         // Buy Now
-        ((MaterialButton) findViewById(R.id.btn_buy_now)).setOnClickListener(v ->
+        findViewById(R.id.btn_buy_now).setOnClickListener(v ->
                 Toast.makeText(this,
                         getString(R.string.detail_buy_stub_message, resolvedItem.getTitle()),
                         Toast.LENGTH_LONG).show()
         );
 
-        // 3D button
-        ((MaterialButton) findViewById(R.id.btn_view_ar)).setOnClickListener(v -> showArNotAvailable());
 
         // Contact Seller
-        ((MaterialButton) findViewById(R.id.btn_contact_seller)).setOnClickListener(v ->
+        findViewById(R.id.btn_contact_seller).setOnClickListener(v ->
                 Toast.makeText(this, "Contact feature coming soon!", Toast.LENGTH_SHORT).show()
         );
     }
@@ -239,7 +238,7 @@ public class ItemDetailActivity extends AppCompatActivity {
         modelLoading = true;
         modelLoadingIndicator.setVisibility(View.VISIBLE);
         Log.d(TAG, "Downloading model: itemId=" + modelItemId + " url=" + modelUrl);
-        repository.downloadAndExtractPlyAsync(modelItemId, modelUrl, new SupabaseRepository.RepositoryCallback<File>() {
+        repository.downloadAndExtractPlyAsync(modelItemId, modelUrl, new SupabaseRepository.RepositoryCallback<>() {
             @Override
             public void onSuccess(@Nullable File data) {
                 modelLoading = false;
@@ -301,11 +300,6 @@ public class ItemDetailActivity extends AppCompatActivity {
             }
 
             @Override
-            public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-                return assetLoader == null ? null : assetLoader.shouldInterceptRequest(android.net.Uri.parse(url));
-            }
-
-            @Override
             public void onPageFinished(WebView view, String url) {
                 Log.d(TAG, "WebView loaded: " + url);
                 modelLoadingIndicator.setVisibility(View.GONE);
@@ -355,7 +349,7 @@ public class ItemDetailActivity extends AppCompatActivity {
         }
 
         Log.d(TAG, "AR download requested: itemId=" + modelItemId + " url=" + modelUrl);
-        repository.downloadAndExtractPlyAsync(modelItemId, modelUrl, new SupabaseRepository.RepositoryCallback<File>() {
+        repository.downloadAndExtractPlyAsync(modelItemId, modelUrl, new SupabaseRepository.RepositoryCallback<>() {
             @Override
             public void onSuccess(@Nullable File data) {
                 if (data == null || !data.exists()) {
@@ -471,7 +465,7 @@ public class ItemDetailActivity extends AppCompatActivity {
         int screenWidthPx = image.getResources().getDisplayMetrics().widthPixels;
         int horizontalPaddingPx = dpToPx(image, 32);
         int availableWidth = Math.max(1, screenWidthPx - horizontalPaddingPx);
-        return Math.max(1, availableWidth);
+        return availableWidth;
     }
 
     private int dpToPx(@NonNull ImageView image, int dp) {
@@ -492,7 +486,7 @@ public class ItemDetailActivity extends AppCompatActivity {
         @Override
         public WebResourceResponse handle(@NonNull String path) {
             try {
-                String cleaned = URLDecoder.decode(path, StandardCharsets.UTF_8.name());
+                String cleaned = URLDecoder.decode(path, StandardCharsets.UTF_8);
                 while (cleaned.startsWith("/")) {
                     cleaned = cleaned.substring(1);
                 }
@@ -509,8 +503,6 @@ public class ItemDetailActivity extends AppCompatActivity {
                 String encoding = resolveEncoding(mimeType);
 
                 return new WebResourceResponse(mimeType, encoding, stream);
-            } catch (FileNotFoundException fileNotFoundException) {
-                return null;
             } catch (Exception ignored) {
                 return null;
             }

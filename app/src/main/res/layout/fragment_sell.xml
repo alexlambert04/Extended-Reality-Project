@@ -11,9 +11,18 @@
         android:layout_width="match_parent"
         android:layout_height="56dp"
         android:background="@color/colorSurface"
-        android:gravity="center"
+        android:gravity="center_vertical"
         android:orientation="horizontal"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
         android:elevation="2dp">
+
+        <ImageView
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_marginEnd="10dp"
+            android:src="@drawable/ic_splatmarket_logo"
+            android:contentDescription="@string/app_display_name" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -36,19 +45,10 @@
             android:orientation="vertical"
             android:padding="16dp">
 
-            <!-- Page title -->
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="@string/sell_title"
-                android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
-                android:textStyle="bold"
-                android:textColor="@color/colorOnSurface" />
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
+                android:layout_marginTop="2dp"
                 android:layout_marginBottom="16dp"
                 android:text="@string/sell_subtitle"
                 android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
@@ -58,7 +58,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
                 app:strokeColor="@color/colorCardBorder"
@@ -145,7 +145,7 @@
                             android:layout_height="160dp"
                             android:clickable="true"
                             android:focusable="true"
-                            app:cardCornerRadius="16dp"
+                            app:cardCornerRadius="12dp"
                             app:cardElevation="0dp"
                             app:strokeWidth="1dp"
                             app:strokeColor="@color/colorCardBorder">
@@ -208,7 +208,7 @@
             <com.google.android.material.card.MaterialCardView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                app:cardCornerRadius="16dp"
+                app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
                 app:strokeWidth="1dp"
                 app:strokeColor="@color/colorCardBorder"
@@ -246,18 +246,26 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="14dp"
                         android:hint="@string/sell_field_title_hint"
-                        app:boxCornerRadiusTopStart="10dp"
-                        app:boxCornerRadiusTopEnd="10dp"
-                        app:boxCornerRadiusBottomStart="10dp"
-                        app:boxCornerRadiusBottomEnd="10dp"
-                        app:boxBackgroundColor="@color/colorBackground">
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/colorCardBorder"
+                        app:boxStrokeWidth="1dp"
+                        app:boxStrokeWidthFocused="2dp"
+                        app:boxBackgroundColor="@color/colorInputBackground"
+                        app:hintTextColor="@color/colorInputHint">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/input_item_title"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="textCapSentences"
-                            android:imeOptions="actionNext" />
+                            android:imeOptions="actionNext"
+                            android:textColor="@color/colorInputText"
+                            android:textColorHint="@color/colorInputHint"
+                            android:textCursorDrawable="@drawable/edit_text_cursor_black"
+                            android:textColorHighlight="@color/black" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Your Name + Location row -->
@@ -289,18 +297,26 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="14dp"
                                 android:hint="@string/sell_field_seller_hint"
-                                app:boxCornerRadiusTopStart="10dp"
-                                app:boxCornerRadiusTopEnd="10dp"
-                                app:boxCornerRadiusBottomStart="10dp"
-                                app:boxCornerRadiusBottomEnd="10dp"
-                                app:boxBackgroundColor="@color/colorBackground">
+                                app:boxCornerRadiusTopStart="12dp"
+                                app:boxCornerRadiusTopEnd="12dp"
+                                app:boxCornerRadiusBottomStart="12dp"
+                                app:boxCornerRadiusBottomEnd="12dp"
+                                app:boxStrokeColor="@color/colorCardBorder"
+                                app:boxStrokeWidth="1dp"
+                                app:boxStrokeWidthFocused="2dp"
+                                app:boxBackgroundColor="@color/colorInputBackground"
+                                app:hintTextColor="@color/colorInputHint">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/input_seller_name"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:inputType="textPersonName"
-                                    android:imeOptions="actionNext" />
+                                    android:imeOptions="actionNext"
+                                    android:textColor="@color/colorInputText"
+                                    android:textColorHint="@color/colorInputHint"
+                                    android:textCursorDrawable="@drawable/edit_text_cursor_black"
+                                    android:textColorHighlight="@color/black" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
 
@@ -326,18 +342,26 @@
                                 android:layout_height="wrap_content"
                                 android:layout_marginBottom="14dp"
                                 android:hint="@string/sell_field_location_hint"
-                                app:boxCornerRadiusTopStart="10dp"
-                                app:boxCornerRadiusTopEnd="10dp"
-                                app:boxCornerRadiusBottomStart="10dp"
-                                app:boxCornerRadiusBottomEnd="10dp"
-                                app:boxBackgroundColor="@color/colorBackground">
+                                app:boxCornerRadiusTopStart="12dp"
+                                app:boxCornerRadiusTopEnd="12dp"
+                                app:boxCornerRadiusBottomStart="12dp"
+                                app:boxCornerRadiusBottomEnd="12dp"
+                                app:boxStrokeColor="@color/colorCardBorder"
+                                app:boxStrokeWidth="1dp"
+                                app:boxStrokeWidthFocused="2dp"
+                                app:boxBackgroundColor="@color/colorInputBackground"
+                                app:hintTextColor="@color/colorInputHint">
 
                                 <com.google.android.material.textfield.TextInputEditText
                                     android:id="@+id/input_item_location"
                                     android:layout_width="match_parent"
                                     android:layout_height="wrap_content"
                                     android:inputType="textCapWords"
-                                    android:imeOptions="actionNext" />
+                                    android:imeOptions="actionNext"
+                                    android:textColor="@color/colorInputText"
+                                    android:textColorHint="@color/colorInputHint"
+                                    android:textCursorDrawable="@drawable/edit_text_cursor_black"
+                                    android:textColorHighlight="@color/black" />
                             </com.google.android.material.textfield.TextInputLayout>
                         </LinearLayout>
                     </LinearLayout>
@@ -359,17 +383,28 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="14dp"
                         android:hint="@string/sell_field_category_hint"
-                        app:boxCornerRadiusTopStart="10dp"
-                        app:boxCornerRadiusTopEnd="10dp"
-                        app:boxCornerRadiusBottomStart="10dp"
-                        app:boxCornerRadiusBottomEnd="10dp"
-                        app:boxBackgroundColor="@color/colorBackground">
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/colorCardBorder"
+                        app:boxStrokeWidth="1dp"
+                        app:boxStrokeWidthFocused="2dp"
+                        app:boxBackgroundColor="@color/colorInputBackground"
+                        app:hintTextColor="@color/colorInputHint">
 
                         <AutoCompleteTextView
                             android:id="@+id/input_item_category"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
-                            android:inputType="none" />
+                            android:ellipsize="end"
+                            android:inputType="none"
+                            android:maxLines="1"
+                            android:singleLine="true"
+                            android:textColor="@color/colorInputText"
+                            android:textColorHint="@color/colorInputHint"
+                            android:textCursorDrawable="@drawable/edit_text_cursor_black"
+                            android:textColorHighlight="@color/black" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Description -->
@@ -389,11 +424,15 @@
                         android:layout_height="wrap_content"
                         android:layout_marginBottom="14dp"
                         android:hint="@string/sell_field_description_hint"
-                        app:boxCornerRadiusTopStart="10dp"
-                        app:boxCornerRadiusTopEnd="10dp"
-                        app:boxCornerRadiusBottomStart="10dp"
-                        app:boxCornerRadiusBottomEnd="10dp"
-                        app:boxBackgroundColor="@color/colorBackground">
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/colorCardBorder"
+                        app:boxStrokeWidth="1dp"
+                        app:boxStrokeWidthFocused="2dp"
+                        app:boxBackgroundColor="@color/colorInputBackground"
+                        app:hintTextColor="@color/colorInputHint">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/input_item_description"
@@ -401,7 +440,11 @@
                             android:layout_height="wrap_content"
                             android:inputType="textMultiLine|textCapSentences"
                             android:minLines="3"
-                            android:gravity="top" />
+                            android:gravity="top"
+                            android:textColor="@color/colorInputText"
+                            android:textColorHint="@color/colorInputHint"
+                            android:textCursorDrawable="@drawable/edit_text_cursor_black"
+                            android:textColorHighlight="@color/black" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                     <!-- Price -->
@@ -420,24 +463,32 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:hint="@string/sell_field_price_hint"
-                        app:boxCornerRadiusTopStart="10dp"
-                        app:boxCornerRadiusTopEnd="10dp"
-                        app:boxCornerRadiusBottomStart="10dp"
-                        app:boxCornerRadiusBottomEnd="10dp"
-                        app:boxBackgroundColor="@color/colorBackground">
+                        app:boxCornerRadiusTopStart="12dp"
+                        app:boxCornerRadiusTopEnd="12dp"
+                        app:boxCornerRadiusBottomStart="12dp"
+                        app:boxCornerRadiusBottomEnd="12dp"
+                        app:boxStrokeColor="@color/colorCardBorder"
+                        app:boxStrokeWidth="1dp"
+                        app:boxStrokeWidthFocused="2dp"
+                        app:boxBackgroundColor="@color/colorInputBackground"
+                        app:hintTextColor="@color/colorInputHint">
 
                         <com.google.android.material.textfield.TextInputEditText
                             android:id="@+id/input_item_price"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:inputType="numberDecimal"
-                            android:imeOptions="actionDone" />
+                            android:imeOptions="actionDone"
+                            android:textColor="@color/colorInputText"
+                            android:textColorHint="@color/colorInputHint"
+                            android:textCursorDrawable="@drawable/edit_text_cursor_black"
+                            android:textColorHighlight="@color/black" />
                     </com.google.android.material.textfield.TextInputLayout>
 
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- Cancel + List Item buttons -->
+            <!-- List Item button -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -445,23 +496,14 @@
                 android:orientation="horizontal">
 
                 <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_cancel"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="1"
-                    android:layout_marginEnd="10dp"
-                    android:text="@string/sell_cancel"
-                    android:padding="14dp"
-                    app:strokeColor="@color/colorCardBorder" />
-
-                <com.google.android.material.button.MaterialButton
                     android:id="@+id/btn_list_item"
-                    android:layout_width="0dp"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_weight="1.5"
                     android:text="@string/sell_list_item"
-                    android:padding="14dp" />
+                    android:textColor="@color/colorOnPrimary"
+                    android:padding="14dp"
+                    app:backgroundTint="@color/colorPrimary"
+                    app:iconTint="@color/colorOnPrimary" />
             </LinearLayout>
 
         </LinearLayout>
