@@ -25,6 +25,16 @@
             android:name="com.google.ar.core"
             android:value="optional" />
 
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
         <activity
             android:name=".camera.RegistrationActivity"
             android:exported="false"
@@ -47,6 +57,11 @@
             android:theme="@style/Theme.ExtendedRealityProject" />
         <activity
             android:name=".ar.ArViewerActivity"
+            android:exported="false"
+            android:theme="@style/Theme.ExtendedRealityProject" />
+
+        <activity
+            android:name=".ui.detail.ItemDetailActivity"
             android:exported="false"
             android:theme="@style/Theme.ExtendedRealityProject" />
 

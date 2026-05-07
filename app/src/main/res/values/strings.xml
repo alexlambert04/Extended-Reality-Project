@@ -7,8 +7,9 @@
     <string name="start_training">Start 3DGS Training</string>
     <string name="stop_training">Stop Training</string>
     <string name="camera_screen_title">Scan Your Object</string>
+    <string name="camera_guide_next">Next – Start Recording</string>
     <string name="camera_guidance">Move slowly around the object. For simple shapes, a ~30-second 360 video is often enough.</string>
-    <string name="camera_timer_initial">00:00 / 03:00</string>
+    <string name="camera_timer_initial">00:00 / 00:30</string>
     <string name="start_recording">Start Recording</string>
     <string name="stop_recording">Stop Recording</string>
     <string name="recording_recommendation_hint">You reached 30 seconds. You can stop now for simple objects.</string>
@@ -64,7 +65,7 @@
     <string name="shorter_recording_hint">This recording is above upload limits. Please scan again with a shorter video (about 30 to 60 seconds).</string>
     <string name="video_file_missing">Recorded video file not found. Please record again.</string>
     <string name="video_too_large_title">Video Too Large</string>
-    <string name="video_too_large">This video is %1$s and exceeds the 50 MB upload limit. Please record a shorter scan.</string>
+    <string name="video_too_large">This video is %1$s and exceeds the 150 MB upload limit. Please record a shorter scan.</string>
     <string name="video_too_large_action_redo">Redo Recording</string>
     <string name="recorded_video_size_label">File size: %1$s</string>
     <string name="open_local_models">Open Marketplace Gallery</string>
@@ -107,4 +108,100 @@
     <string name="available_scans_ready_hint">You can start a new scan.</string>
     <string name="available_scans_fetch_failed">Could not refresh scan availability right now.</string>
     <string name="generation_limit_reached_message">Generation limit reached. Please contact support or try again later.</string>
+
+    <!-- Marketplace / navigation -->
+    <string name="app_display_name">SplatMarket</string>
+    <string name="nav_browse">Browse</string>
+    <string name="nav_sell">Sell</string>
+
+    <!-- Browse screen -->
+    <string name="browse_hero_title">Discover unique items,</string>
+    <string name="browse_hero_subtitle">visualized in 3D</string>
+    <string name="browse_search_hint">Search for items…</string>
+    <string name="browse_filter_categories">All Categories</string>
+    <string name="browse_filter_sort">Most Recent</string>
+    <string name="browse_items_found">Items available</string>
+    <string name="browse_items_count">%1$d items available</string>
+
+    <!-- Filter chips -->
+    <string name="filter_all">All</string>
+    <string name="filter_furniture">Furniture</string>
+    <string name="filter_electronics">Electronics</string>
+    <string name="filter_sports">Sports</string>
+    <string name="filter_clothing">Clothing</string>
+    <string name="filter_other">Other</string>
+
+    <!-- Item card -->
+    <string name="item_image_description">Item photo</string>
+    <string name="item_seller_prefix">By %1$s</string>
+
+    <!-- Item detail screen -->
+    <string name="detail_tab_photos">Photos</string>
+    <string name="detail_tab_3d">3D Model</string>
+    <string name="detail_tab_ar">AR View</string>
+    <string name="detail_description_label">Description</string>
+    <string name="detail_seller_label">Seller Information</string>
+    <string name="detail_location_label">Location</string>
+    <string name="detail_member_since">Member since %1$s</string>
+    <string name="detail_contact_seller">Contact Seller</string>
+    <string name="detail_view_ar">3D</string>
+    <string name="detail_buy_now">Buy Now</string>
+    <string name="detail_ar_not_available">3D model not yet available for this item.</string>
+    <string name="detail_buy_stub_message">Purchase request sent for \'%1$s\'! (Demo only)</string>
+    <string name="detail_back">Back</string>
+    <string name="detail_views">%1$d views</string>
+    <string name="detail_days_ago">%1$d days ago</string>
+    <string name="detail_location_value">Location: %1$s</string>
+    <string name="detail_placeholder_category">Category</string>
+    <string name="detail_placeholder_title">Item Title</string>
+    <string name="detail_placeholder_location">Location</string>
+    <string name="detail_placeholder_price">EUR 0</string>
+    <string name="detail_placeholder_description">Description</string>
+    <string name="detail_placeholder_avatar">A</string>
+    <string name="detail_placeholder_seller">Seller Name</string>
+
+    <!-- Sell screen -->
+    <string name="sell_title">List your item</string>
+    <string name="sell_subtitle">Record a short video, add details, and list your item for the marketplace.</string>
+    <string name="sell_capture_method_title">3D Capture Method</string>
+    <string name="sell_method_photos">Multiple Photos</string>
+    <string name="sell_method_photos_hint">Min. 12-15 photos</string>
+    <string name="sell_method_video">Video Scan</string>
+    <string name="sell_method_video_hint">30-60 sec video</string>
+    <string name="sell_photos_count">%1$d / 12+ photos uploaded</string>
+    <string name="sell_add_photo">Add</string>
+    <string name="sell_item_details_title">Item Details</string>
+    <string name="sell_video_placeholder">Tap to add a video of your item\n(record or pick from gallery)</string>
+    <string name="sell_video_selected">✓ Video selected</string>
+    <string name="sell_video_required">Please add a video of your item</string>
+    <string name="sell_video_preview_desc">Selected video thumbnail</string>
+    <string name="sell_record_video">Record Video</string>
+    <string name="sell_pick_video">Pick from Gallery</string>
+    <string name="sell_field_title">Item Name</string>
+    <string name="sell_field_title_hint">e.g. Vintage Leather Chair</string>
+    <string name="sell_field_seller_name">Your Name</string>
+    <string name="sell_field_seller_hint">e.g. Anna M.</string>
+    <string name="sell_field_price">Price (€)</string>
+    <string name="sell_field_price_hint">0.00</string>
+    <string name="sell_field_category">Category</string>
+    <string name="sell_field_category_hint">Select a category</string>
+    <string name="sell_field_description">Description</string>
+    <string name="sell_field_description_hint">Describe the condition, dimensions, and any notable features…</string>
+    <string name="sell_field_location">Location</string>
+    <string name="sell_field_location_hint">e.g. Amsterdam</string>
+    <string name="sell_list_item">List Item</string>
+    <string name="sell_cancel">Cancel</string>
+    <string name="sell_error_required">This field is required</string>
+    <string name="sell_success_title">Item Listed!</string>
+    <string name="sell_success_message">"%1$s" details saved to the marketplace.</string>
+    <string name="sell_success_ok">OK</string>
+    <string name="sell_error_invalid_price">Enter a valid price</string>
+    <string name="sell_error_title">Listing update failed</string>
+    <string name="sell_error_message">Could not update the listing: %1$s</string>
+    <string name="sell_take_thumbnail">Take Thumbnail Photo</string>
+    <string name="sell_thumbnail_required">Please take a thumbnail photo</string>
+    <string name="sell_thumbnail_preview_desc">Thumbnail preview</string>
+    <string name="sell_thumbnail_selected">✓ Thumbnail captured</string>
+    <string name="sell_thumbnail_capture_failed">Thumbnail capture failed.</string>
+    <string name="sell_thumbnail_file_name">Thumbnail saved: %1$s</string>
 </resources>
