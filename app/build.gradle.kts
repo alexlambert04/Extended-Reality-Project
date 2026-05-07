@@ -41,19 +41,6 @@ android {
         buildConfigField("String", "SUPABASE_ANON_KEY", toBuildConfigString(supabaseAnonKey))
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        externalNativeBuild {
-            cmake {
-                cppFlags += "-std=c++17"
-            }
-        }
-    }
-
-    externalNativeBuild {
-        cmake {
-            path = file("CMakeLists.txt")
-            version = "3.22.1"
-        }
     }
 
     buildTypes {
