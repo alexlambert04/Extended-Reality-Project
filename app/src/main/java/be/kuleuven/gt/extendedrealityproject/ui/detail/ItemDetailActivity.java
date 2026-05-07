@@ -31,7 +31,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import be.kuleuven.gt.extendedrealityproject.R;
@@ -563,7 +562,7 @@ public class ItemDetailActivity extends AppCompatActivity {
         @Override
         public WebResourceResponse handle(@NonNull String path) {
             try {
-                String cleaned = URLDecoder.decode(path, StandardCharsets.UTF_8);
+                String cleaned = URLDecoder.decode(path, "UTF-8");
                 while (cleaned.startsWith("/")) {
                     cleaned = cleaned.substring(1);
                 }
