@@ -7,8 +7,9 @@
     <string name="start_training">Start 3DGS Training</string>
     <string name="stop_training">Stop Training</string>
     <string name="camera_screen_title">Scan Your Object</string>
+    <string name="camera_guide_next">Next – Start Recording</string>
     <string name="camera_guidance">Move slowly around the object. For simple shapes, a ~30-second 360 video is often enough.</string>
-    <string name="camera_timer_initial">00:00 / 03:00</string>
+    <string name="camera_timer_initial">00:00 / 00:30</string>
     <string name="start_recording">Start Recording</string>
     <string name="stop_recording">Stop Recording</string>
     <string name="recording_recommendation_hint">You reached 30 seconds. You can stop now for simple objects.</string>

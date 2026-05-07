@@ -28,6 +28,7 @@ import androidx.camera.video.VideoCapture;
 import androidx.camera.video.VideoRecordEvent;
 import androidx.core.content.ContextCompat;
 
+import com.bumptech.glide.Glide;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
@@ -51,9 +52,7 @@ public class CameraCaptureActivity extends AppCompatActivity {
     private final Runnable timerRunnable = new Runnable() {
         @Override
         public void run() {
-            if (activeRecording == null) {
-                return;
-            }
+            if (activeRecording == null) return;
             updateTimer();
             uiHandler.postDelayed(this, 250L);
         }
@@ -83,6 +82,15 @@ public class CameraCaptureActivity extends AppCompatActivity {
         recommendationColorDefault = ContextCompat.getColor(this, R.color.hint_positive);
         recommendationColorWarning = ContextCompat.getColor(this, R.color.hint_warning);
 
+        // ── Guide screen ──────────────────────────────────────────────────────
+        Glide.with(this)
+                .asGif()
+                .load(R.drawable.scan_guid)
+                .into(binding.scanGuideImage);
+
+        binding.btnNextToRecord.setOnClickListener(v -> showRecordingScreen());
+
+        // ── Recording controls (hidden until Next) ────────────────────────────
         binding.timerText.setText(getString(R.string.camera_timer_initial));
 
         if (getIntent().getBooleanExtra(RecordingFlowContract.EXTRA_HINT_SHORTER_RECORDING, false)) {
@@ -113,13 +121,21 @@ public class CameraCaptureActivity extends AppCompatActivity {
             }
         });
 
+        refreshCreditsGate();
+    }
+
+    /** Switch from the guide screen to the live camera / recording screen. */
+    private void showRecordingScreen() {
+        binding.guideContainer.setVisibility(View.GONE);
+        binding.previewView.setVisibility(View.VISIBLE);
+        binding.recordingStatusBar.setVisibility(View.VISIBLE);
+        binding.recordButton.setVisibility(View.VISIBLE);
+
         if (hasCameraPermission()) {
             startCamera();
         } else {
             requestCameraPermissionLauncher.launch(Manifest.permission.CAMERA);
         }
-
-        refreshCreditsGate();
     }
 
     @Override
@@ -154,17 +170,14 @@ public class CameraCaptureActivity extends AppCompatActivity {
             applyCreditsState(false);
             return;
         }
-
         repository.fetchAvailableScansAsync(new SupabaseRepository.RepositoryCallback<Integer>() {
             @Override
             public void onSuccess(Integer data) {
                 int remaining = data == null ? 0 : Math.max(0, data);
                 applyCreditsState(remaining <= 0);
             }
-
             @Override
             public void onError(String message, Throwable throwable) {
-                // Keep capture available when credit status cannot be fetched.
                 applyCreditsState(false);
             }
         });
@@ -183,7 +196,8 @@ public class CameraCaptureActivity extends AppCompatActivity {
     }
 
     private void startCamera() {
-        ListenableFuture<ProcessCameraProvider> cameraProviderFuture = ProcessCameraProvider.getInstance(this);
+        ListenableFuture<ProcessCameraProvider> cameraProviderFuture =
+                ProcessCameraProvider.getInstance(this);
         cameraProviderFuture.addListener(() -> {
             try {
                 ProcessCameraProvider cameraProvider = cameraProviderFuture.get();
@@ -199,23 +213,16 @@ public class CameraCaptureActivity extends AppCompatActivity {
         preview.setSurfaceProvider(binding.previewView.getSurfaceProvider());
 
         Recorder recorder = new Recorder.Builder()
-                .setQualitySelector(
-                        QualitySelector.from(
-                                Quality.HD,
-                                FallbackStrategy.lowerQualityThan(Quality.HD)
-                        )
-                )
+                .setQualitySelector(QualitySelector.from(
+                        Quality.HD,
+                        FallbackStrategy.lowerQualityThan(Quality.HD)))
                 .build();
 
         videoCapture = VideoCapture.withOutput(recorder);
 
         cameraProvider.unbindAll();
-        cameraProvider.bindToLifecycle(
-                this,
-                CameraSelector.DEFAULT_BACK_CAMERA,
-                preview,
-                videoCapture
-        );
+        cameraProvider.bindToLifecycle(this, CameraSelector.DEFAULT_BACK_CAMERA,
+                preview, videoCapture);
     }
 
     private void startRecording() {
@@ -235,15 +242,14 @@ public class CameraCaptureActivity extends AppCompatActivity {
 
         currentOutputFile = new File(capturesDirectory, "scan_" + System.currentTimeMillis() + ".mp4");
         FileOutputOptions outputOptions = new FileOutputOptions.Builder(currentOutputFile).build();
-        PendingRecording pendingRecording = videoCapture.getOutput().prepareRecording(this, outputOptions);
+        PendingRecording pendingRecording =
+                videoCapture.getOutput().prepareRecording(this, outputOptions);
 
         binding.recommendationHintText.setVisibility(View.GONE);
         recordingStartTimeMs = SystemClock.elapsedRealtime();
 
         activeRecording = pendingRecording.start(
-                ContextCompat.getMainExecutor(this),
-                this::onRecordingEvent
-        );
+                ContextCompat.getMainExecutor(this), this::onRecordingEvent);
 
         binding.recordButton.setText(R.string.stop_recording);
         updateTimer();
@@ -259,9 +265,7 @@ public class CameraCaptureActivity extends AppCompatActivity {
     }
 
     private void onRecordingEvent(@NonNull VideoRecordEvent event) {
-        if (!(event instanceof VideoRecordEvent.Finalize)) {
-            return;
-        }
+        if (!(event instanceof VideoRecordEvent.Finalize)) return;
 
         uiHandler.removeCallbacks(timerRunnable);
         uiHandler.removeCallbacks(recommendationRunnable);
@@ -277,7 +281,6 @@ public class CameraCaptureActivity extends AppCompatActivity {
         VideoRecordEvent.Finalize finalizeEvent = (VideoRecordEvent.Finalize) event;
         if (finalizeEvent.hasError()) {
             if (currentOutputFile != null && currentOutputFile.exists()) {
-                // Best effort cleanup for incomplete output.
                 currentOutputFile.delete();
             }
             Toast.makeText(this, R.string.recording_failed, Toast.LENGTH_SHORT).show();
@@ -300,24 +303,17 @@ public class CameraCaptureActivity extends AppCompatActivity {
     private void updateTimer() {
         long elapsedMs = SystemClock.elapsedRealtime() - recordingStartTimeMs;
         long safeElapsed = Math.min(elapsedMs, RecordingFlowContract.MAX_RECORDING_MS);
-
         long elapsedSeconds = safeElapsed / 1000L;
         long minutes = elapsedSeconds / 60L;
         long seconds = elapsedSeconds % 60L;
-
-        String timerText = String.format(Locale.US, "%02d:%02d / 03:00", minutes, seconds);
-        binding.timerText.setText(timerText);
+        binding.timerText.setText(String.format(Locale.US, "%02d:%02d / 00:30", minutes, seconds));
     }
 
     private void showShorterRecordingHint() {
         binding.recommendationHintText.setText(R.string.shorter_recording_hint);
         binding.recommendationHintText.setTextColor(recommendationColorWarning);
         binding.recommendationHintText.setCompoundDrawablesRelativeWithIntrinsicBounds(
-                android.R.drawable.ic_dialog_alert,
-                0,
-                0,
-                0
-        );
+                android.R.drawable.ic_dialog_alert, 0, 0, 0);
         binding.recommendationHintText.setCompoundDrawablePadding(dpToPx(6));
         binding.recommendationHintText.setVisibility(View.VISIBLE);
     }
@@ -328,8 +324,7 @@ public class CameraCaptureActivity extends AppCompatActivity {
     }
 
     private int dpToPx(int dp) {
-        float density = getResources().getDisplayMetrics().density;
-        return Math.round(dp * density);
+        return Math.round(dp * getResources().getDisplayMetrics().density);
     }
 }
 
