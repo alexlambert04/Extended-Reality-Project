@@ -1,9 +1,3 @@
-This is the moment we bring everything together into one rock-solid, professional architecture. What we are about to outline is your Single Source of Truth (SSOT) for the MVP.
-
-Here is the complete, end-to-end technical specification for your 3D Gaussian Splatting (3DGS) pipeline.
-
----
-
 ### 1. The Database Specification (Supabase PostgreSQL)
 
 Table Name: **`MarketplaceItems`**
