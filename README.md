@@ -16,6 +16,7 @@ An Android application for capturing object videos, processing them via KIRI 3D 
 - **Asynchronous Polling:** Real-time status polling via HTTP with exponential backoff.
 - **Model Download & Extraction:** Automatic ZIP extraction of generated artifacts into app cache.
 - **3D Viewer:** WebView-based gsplat.js viewer for local `.ply` model rendering.
+- **AR Viewer:** ARCore + Sceneform viewer with plane tap placement for `.glb`/`.gltf` models.
 - **Local Model Library:** Browse cached models directly from device storage.
 - **Generation Progress UI:** Live status tracking with debug information.
 - **Multi-API-Key Rotation:** Server-side key management for KIRI credit distribution.
@@ -29,6 +30,7 @@ An Android application for capturing object videos, processing them via KIRI 3D 
 5. **Download:** Fetch completed model artifact from Supabase and cache locally.
 6. **View:** Open and render 3D model in WebView-based gsplat viewer.
 7. **Browse:** View marketplace items created by other users with local model caching.
+8. **Place in AR:** Launch AR viewer from item details/progress/library and place model on detected planes.
 
 ## Architecture
 
@@ -58,7 +60,10 @@ app/src/main/java/be/kuleuven/gt/extendedrealityproject/
 │   ├── RecordingFlowContract.java    # Intent extras contract
 │   └── GenerationSessionStore.java   # Local persistence for recovery
 ├── ar/
-│   └── [ARCore integration for future AR viewing]
+│   ├── ArViewerActivity.java        # AR viewer host activity
+│   ├── ArViewerFragment.java        # AR scene setup and plane-tap placement
+│   ├── ArSessionController.java     # AR session lifecycle helper
+│   └── ArViewerContract.java        # Intent/args contract for AR viewer
 ├── ui/
 │   ├── browse/
 │   │   ├── BrowseFragment.java       # Marketplace listing & search
@@ -157,6 +162,13 @@ The system automatically picks this key for new generations once saved.
 3. **Tap item** → View item details (title, price, description, seller)
 4. **Tap "View Model"** → Download if needed and open in 3D viewer
 5. **Local caching** → Models stay on device after first download
+
+### AR Viewing
+
+1. Open AR view from item details, generation progress, or local model library
+2. App resolves an AR-renderable model (`.glb`/`.gltf`) and launches AR viewer
+3. Detect horizontal surfaces and tap to place model in the environment
+4. Use scene controls to reposition/scale/rotate the placed model
 
 ### Timing Expectations
 
@@ -314,6 +326,5 @@ Or use Android Studio's build menu.
 - [ ] Storage quota management and LRU eviction with pinning
 - [ ] User authentication and RLS policies
 - [ ] Shared/Public model discovery
-- [ ] AR viewing with ARCore plane detection
 - [ ] Local on-device 3DGS training (requires significant C++ work)
 - [ ] Automatic retry-kiri-job Edge Function for failed jobs
