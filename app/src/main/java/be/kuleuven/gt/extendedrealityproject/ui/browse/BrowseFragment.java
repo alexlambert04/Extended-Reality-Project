@@ -103,9 +103,12 @@ public class BrowseFragment extends Fragment {
     private void loadItems(@NonNull View root) {
         if (repository == null) {
             allItems = DummyData.getItems();
+            updateProcessingBanner(root, null);
             applyFilter(root);
             return;
         }
+
+        loadProcessingItems(root);
 
         repository.fetchReadyMarketplaceItemsAsync(new SupabaseRepository.RepositoryCallback<List<MarketplaceItemRecord>>() {
             @Override
@@ -131,6 +134,90 @@ public class BrowseFragment extends Fragment {
                 Toast.makeText(requireContext(), getString(R.string.marketplace_load_failed, message), Toast.LENGTH_SHORT).show();
             }
         });
+    }
+
+    private void loadProcessingItems(@NonNull View root) {
+        if (repository == null) {
+            updateProcessingBanner(root, null);
+            return;
+        }
+
+        repository.fetchProcessingMarketplaceItemsAsync(new SupabaseRepository.RepositoryCallback<List<MarketplaceItemRecord>>() {
+            @Override
+            public void onSuccess(@Nullable List<MarketplaceItemRecord> data) {
+                if (!isAdded()) {
+                    return;
+                }
+                updateProcessingBanner(root, data);
+            }
+
+            @Override
+            public void onError(@NonNull String message, @Nullable Throwable throwable) {
+                if (!isAdded()) {
+                    return;
+                }
+                updateProcessingBanner(root, null);
+            }
+        });
+    }
+
+    private void updateProcessingBanner(@NonNull View root, @Nullable List<MarketplaceItemRecord> records) {
+        View container = root.findViewById(R.id.processing_container);
+        if (container == null) {
+            return;
+        }
+
+        if (records == null || records.isEmpty()) {
+            container.setVisibility(View.GONE);
+            return;
+        }
+
+        TextView titleView = root.findViewById(R.id.processing_title);
+        TextView descriptionView = root.findViewById(R.id.processing_description);
+        TextView listView = root.findViewById(R.id.processing_list);
+
+        titleView.setText(getString(R.string.browse_processing_title, records.size()));
+        descriptionView.setText(getString(R.string.browse_processing_description));
+        listView.setText(buildProcessingList(records));
+        container.setVisibility(View.VISIBLE);
+    }
+
+    @NonNull
+    private String buildProcessingList(@NonNull List<MarketplaceItemRecord> records) {
+        int maxItems = 3;
+        int total = records.size();
+        int count = Math.min(total, maxItems);
+
+        StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < count; i++) {
+            MarketplaceItemRecord record = records.get(i);
+            String title = record.getTitle();
+            if (title == null || title.trim().isEmpty()) {
+                title = getString(R.string.browse_processing_item_fallback, shortId(record.getId()));
+            } else {
+                title = title.trim();
+            }
+
+            if (i > 0) {
+                builder.append("\n");
+            }
+            builder.append("- ").append(title);
+        }
+
+        if (total > maxItems) {
+            builder.append("\n");
+            builder.append(getString(R.string.browse_processing_more, total - maxItems));
+        }
+
+        return builder.toString();
+    }
+
+    @NonNull
+    private String shortId(@NonNull String itemId) {
+        if (itemId.length() <= 6) {
+            return itemId;
+        }
+        return itemId.substring(0, 6);
     }
 
     @NonNull
