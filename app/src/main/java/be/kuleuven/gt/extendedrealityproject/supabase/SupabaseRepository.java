@@ -17,9 +17,9 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.util.Locale;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.zip.ZipEntry;
@@ -151,6 +151,18 @@ public class SupabaseRepository {
         executor.execute(() -> {
             try {
                 postSuccess(callback, fetchReadyMarketplaceItems());
+            } catch (Exception exception) {
+                postError(callback, userMessage(exception), exception);
+            }
+        });
+    }
+
+    public void fetchProcessingMarketplaceItemsAsync(
+            @NonNull RepositoryCallback<List<MarketplaceItemRecord>> callback
+    ) {
+        executor.execute(() -> {
+            try {
+                postSuccess(callback, fetchProcessingMarketplaceItems());
             } catch (Exception exception) {
                 postError(callback, userMessage(exception), exception);
             }
@@ -340,6 +352,34 @@ public class SupabaseRepository {
     @NonNull
     private List<MarketplaceItemRecord> fetchReadyMarketplaceItems() throws IOException, JSONException {
         Request request = baseApiRequest(baseUrl + "/rest/v1/MarketplaceItems?status=eq.READY&select=*&order=created_at.desc")
+                .get()
+                .build();
+
+        try (Response response = httpClient.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                throw new IOException(errorFrom(response));
+            }
+
+            ResponseBody responseBody = response.body();
+            if (responseBody == null) {
+                throw new IOException("Server returned an empty response.");
+            }
+
+            JSONArray array = new JSONArray(responseBody.string());
+            List<MarketplaceItemRecord> result = new ArrayList<>();
+            for (int i = 0; i < array.length(); i++) {
+                JSONObject object = array.optJSONObject(i);
+                if (object != null) {
+                    result.add(parseMarketplaceItem(object));
+                }
+            }
+            return result;
+        }
+    }
+
+    @NonNull
+    private List<MarketplaceItemRecord> fetchProcessingMarketplaceItems() throws IOException, JSONException {
+        Request request = baseApiRequest(baseUrl + "/rest/v1/MarketplaceItems?status=eq.PROCESSING_IN_CLOUD&select=*&order=created_at.desc")
                 .get()
                 .build();
 

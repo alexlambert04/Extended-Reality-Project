@@ -122,6 +122,10 @@
     <string name="browse_filter_sort">Most Recent</string>
     <string name="browse_items_found">Items available</string>
     <string name="browse_items_count">%1$d items available</string>
+    <string name="browse_processing_title">Processing in cloud (%1$d)</string>
+    <string name="browse_processing_description">These items are still processing and will appear soon.</string>
+    <string name="browse_processing_more">and %1$d more</string>
+    <string name="browse_processing_item_fallback">Item %1$s</string>
 
     <!-- Filter chips -->
     <string name="filter_all">All</string>
